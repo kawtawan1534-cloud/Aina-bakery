@@ -1,0 +1,223 @@
+﻿{
+    "sold":  {
+                 "anpan":  4,
+                 "shokupan":  3,
+                 "melonpan":  5
+             },
+    "walkedAway":  2,
+    "discardWasteBaht":  0,
+    "threshold":  {
+                      "milk":  750.00,
+                      "yeast":  100.00,
+                      "sugar":  350.000,
+                      "cocoa":  0.00,
+                      "flour":  1000.00,
+                      "redbean":  600.000,
+                      "egg":  6.00,
+                      "butter":  180.000
+                  },
+    "eggWasteBaht":  1.66666666666666680,
+    "day":  120,
+    "minRatio":  0.76923076923076927,
+    "bundleSoldCount":  2,
+    "opExpenseCost":  3574.3,
+    "custGen":  {
+                    "p":  0.35,
+                    "customers":  11,
+                    "rolls":  [
+                                  48,
+                                  10,
+                                  61,
+                                  79,
+                                  5,
+                                  25,
+                                  90,
+                                  86,
+                                  82,
+                                  24,
+                                  45,
+                                  71,
+                                  82,
+                                  72,
+                                  7,
+                                  22,
+                                  39,
+                                  6,
+                                  59,
+                                  2,
+                                  85,
+                                  60,
+                                  31,
+                                  45,
+                                  44,
+                                  18,
+                                  53,
+                                  15,
+                                  97,
+                                  70
+                              ],
+                    "N":  30,
+                    "successes":  11,
+                    "seed":  26464
+                },
+    "rentCost":  3500,
+    "bundlePromoActive":  true,
+    "cashStart":  37674.926666666805,
+    "nearDepletion":  {
+                          "sugar":  490
+                      },
+    "reorderCost":  288.75000,
+    "stockBefore":  {
+                        "butter":  300,
+                        "yeast":  890,
+                        "cocoa":  0,
+                        "flour":  6550,
+                        "sugar":  775,
+                        "egg":  14,
+                        "milk":  2600,
+                        "redbean":  1250
+                    },
+    "appealDecay":  {
+                        "anpan":  0.97,
+                        "shokupan":  1,
+                        "melonpan":  1
+                    },
+    "customerLog":  [
+                        {
+                            "walkedAway":  true
+                        },
+                        {
+                            "freshItem":  "shokupan",
+                            "bundle":  true,
+                            "stalePool":  "stale1",
+                            "staleItem":  "anpan"
+                        },
+                        {
+                            "pool":  "fresh",
+                            "item":  "anpan",
+                            "qty":  2
+                        },
+                        {
+                            "pool":  "fresh",
+                            "item":  "shokupan",
+                            "qty":  1
+                        },
+                        {
+                            "pool":  "fresh",
+                            "item":  "shokupan",
+                            "qty":  1
+                        },
+                        {
+                            "pool":  "stale1",
+                            "item":  "melonpan",
+                            "qty":  1
+                        },
+                        {
+                            "freshItem":  "melonpan",
+                            "bundle":  true,
+                            "stalePool":  "stale1",
+                            "staleItem":  "anpan"
+                        },
+                        {
+                            "pool":  "fresh",
+                            "item":  "melonpan",
+                            "qty":  1
+                        },
+                        {
+                            "pool":  "fresh",
+                            "item":  "melonpan",
+                            "qty":  1
+                        },
+                        {
+                            "pool":  "fresh",
+                            "item":  "melonpan",
+                            "qty":  1
+                        },
+                        {
+                            "walkedAway":  true
+                        }
+                    ],
+    "hypeItem":  "melonpan",
+    "waterElecBase":  50,
+    "walkAwayChanceHits":  1,
+    "revenue":  386,
+    "stockAfterProduction":  {
+                                 "butter":  45,
+                                 "yeast":  859,
+                                 "cocoa":  0,
+                                 "flour":  5730,
+                                 "sugar":  490,
+                                 "egg":  12,
+                                 "milk":  1680,
+                                 "redbean":  1150
+                             },
+    "productionOrder":  {
+                            "anpan":  3,
+                            "shokupan":  5,
+                            "melonpan":  6
+                        },
+    "unitCost":  {
+                     "anpan":  20.47500000000000005,
+                     "shokupan":  15.9166666666666667,
+                     "melonpan":  25.39166666666666675
+                 },
+    "packagingCost":  18,
+    "discardedToday":  {
+                           "anpan":  0,
+                           "shokupan":  0,
+                           "melonpan":  0
+                       },
+    "totalCostWithWaste":  191.93333333333333400,
+    "ovenElecCost":  6.3,
+    "needed":  {
+                   "milk":  1440,
+                   "yeast":  48,
+                   "redbean":  150,
+                   "flour":  1270,
+                   "sugar":  435,
+                   "butter":  390
+               },
+    "consecutiveDays":  {
+                            "anpan":  1,
+                            "shokupan":  0,
+                            "melonpan":  0
+                        },
+    "refilledCost":  {
+                         "butter":  288.75000
+                     },
+    "staleSold":  {
+                      "stale1":  {
+                                     "anpan":  2,
+                                     "shokupan":  0,
+                                     "melonpan":  1
+                                 },
+                      "fresh":  {
+                                    "anpan":  2,
+                                    "shokupan":  3,
+                                    "melonpan":  4
+                                },
+                      "stale2":  {
+                                     "anpan":  0,
+                                     "shokupan":  0,
+                                     "melonpan":  0
+                                 }
+                  },
+    "refilled":  {
+                     "butter":  1155.000
+                 },
+    "customers":  11,
+    "cashEnd":  34197.8766666668,
+    "actualProduced":  {
+                           "anpan":  2,
+                           "shokupan":  3,
+                           "melonpan":  4
+                       },
+    "ratios":  {
+                   "milk":  1.8055555555555556,
+                   "yeast":  18.541666666666668,
+                   "redbean":  8.3333333333333339,
+                   "flour":  5.15748031496063,
+                   "sugar":  1.7816091954022988,
+                   "butter":  0.76923076923076927
+               }
+}

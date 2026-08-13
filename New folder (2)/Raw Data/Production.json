@@ -1,0 +1,9 @@
+{
+  "menu": {
+    "shokupan": { "price": 30, "locked": false },
+    "melonpan": { "price": 38, "locked": false },
+    "anpan": { "price": 35, "locked": false },
+    "creampan": { "price": 38, "locked": true },
+    "koronepan": { "price": 42, "locked": true }
+  }
+}

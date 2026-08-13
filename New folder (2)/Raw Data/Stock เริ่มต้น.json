@@ -1,0 +1,6 @@
+{
+  "stockMax": { "flour": 10, "yeast": 1, "sugar": 3.5, "milk": 5, "butter": 1.2, "egg": 30, "redbean": 2.0, "cocoa": 0 },
+  "unitScale": { "flour": 1000, "yeast": 1000, "sugar": 1000, "milk": 1000, "butter": 1000, "redbean": 1000, "egg": 1, "cocoa": 1 },
+  "reorderThreshold": { "flour": 0.10, "yeast": 0.10, "sugar": 0.10, "milk": 0.15, "butter": 0.15, "redbean": 0.30, "egg": 0.20, "cocoa": 0.10 },
+  "initialCash": 36190.0
+}

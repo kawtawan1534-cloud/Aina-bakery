@@ -1,0 +1,19 @@
+{
+  "recipe": {
+    "shokupan": { "flour": 80, "yeast": 3, "milk": 120, "butter": 15, "sugar": 15, "egg": 0.1 },
+    "melonpan": { "flour": 110, "yeast": 4, "milk": 100, "butter": 45, "sugar": 50, "egg": 0.25 },
+    "anpan": { "flour": 70, "yeast": 3, "milk": 80, "butter": 15, "redbean": 50, "sugar": 20, "egg": 0.15 },
+    "creampan": { "flour": 70, "yeast": 3, "milk": 180, "butter": 20, "sugar": 40, "egg": 0.3 },
+    "koronepan": { "flour": 100, "yeast": 4, "milk": 100, "butter": 30, "sugar": 30, "egg": 0.2, "cocoa": 30 }
+  },
+  "costRates": {
+    "flour": 0.04,
+    "yeast": 0.30,
+    "milk": 0.06,
+    "butter": 0.25,
+    "sugar": 0.03,
+    "egg": 4.166666666666667,
+    "redbean": 0.14,
+    "cocoa": 0.32
+  }
+}

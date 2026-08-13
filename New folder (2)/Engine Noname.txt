@@ -1,0 +1,195 @@
+/* ===== Engine Noname — Patch Version: 4.5.0 (FROZEN — ดู Parallel Engine Core.ps1 6.0.0+) ===== */
+/* ตั้งแต่ Patch 5.0.0: ไฟล์นี้ (.txt) แช่แข็งเป็น snapshot pseudocode อ้างอิงประวัติ
+   เท่านั้น ไม่ใช่ source of truth ของ logic อีกต่อไป — engine ตัวจริงที่รันได้จริง
+   และพัฒนาต่อคือ Parallel Engine Core.ps1 + Layers\ (เดิมชื่อ Engine Noname.ps1
+   ก่อน Patch 6.0.0 — ตรวจสอบแล้วว่า logic ทุกฟังก์ชันด้านล่างตรงกับเอนจิ้นจริง
+   เป๊ะ ณ จุดแช่แข็งนี้) การแก้ไข/เพิ่ม logic ใหม่ทั้งหมดหลังจากนี้ให้ทำใน
+   Parallel Engine Core.ps1 หรือไฟล์ layer ใน Layers\ เท่านั้น ไฟล์นี้จะไม่ถูก
+   อัปเดตตามอีก เก็บไว้อ่านเพื่อเข้าใจ pipeline/ประวัติเดิมเท่านั้น */
+/* Pipeline: memoryLayer -> core -> outputProduction ->
+   customerLayer -> salesLayer -> reorderLayer -> outputSales */
+/* ประวัติ/เหตุผลของทุกแพท (ทำไมถึงเป็นแบบนี้, เวอร์ชันก่อนหน้า, ทางเลือกที่ปฏิเสธไป,
+   ผลการทดสอบ) อยู่ที่ Patch_Log.txt ทั้งหมด — คอมเมนต์ในไฟล์นี้เก็บแค่สิ่งที่จำเป็น
+   ต่อการอ่าน/แก้โค้ดเท่านั้น */
+
+// [1] MEMORY LAYER — ข้อมูลดิบ (มาจาก Stock เริ่มต้น.txt, Production Recipe per Piece.txt, Player Input)
+// memory = { stock, stockMax, recipe, costRates, productionOrder, reorderThreshold }
+// reorderThreshold: % ของ stockMax ต่อวัตถุดิบ (ใช้ใน reorderLayer())
+// productionOrder เป็น Player Input หรือใช้ autoProductionOrder() ด้านล่างแทนก็ได้
+
+// เจนจำนวนการผลิตเอง (ทางเลือกแทน Player Input) — ปรับทีละก้าวตามยอดขายเมื่อวาน
+function autoProductionOrder(prevOrder, producedLastDay, soldLastDay, items) {
+  const productionOrder = {};
+  for (const item of items) {
+    const ordered = prevOrder[item] || 5; // ยอดที่สั่งไปเมื่อวาน (fallback วันแรก)
+    const produced = producedLastDay[item] || 0;
+    const sold = soldLastDay[item] || 0;
+    let qty = ordered;
+
+    if (produced > 0) {
+      const sellThroughRate = sold / produced;
+      if (produced >= ordered && sold >= produced) {
+        qty = Math.ceil(qty * 1.2); // ขายหมดเกลี้ยง (ผลิตครบตามสั่งด้วย) → เพิ่ม 20%
+      } else if (sellThroughRate < 0.5) {
+        qty = Math.floor(qty * 0.85); // ขายได้ไม่ถึงครึ่ง → ลด 15%
+      } else if (sellThroughRate < 0.75) {
+        qty = Math.floor(qty * 0.93); // ขายได้ 50-75% → ลดเล็กน้อย 7%
+      }
+      // ขายได้ 75-100% (ไม่หมดเกลี้ยง) → คงเดิม โซนสมดุลจริง
+    }
+    // produced < ordered แล้วขายหมด → ไม่นับเป็นสัญญาณเพิ่ม (วัตถุดิบขาด ไม่ใช่ดีมานด์สูง)
+
+    productionOrder[item] = Math.max(1, qty);
+  }
+  return productionOrder;
+}
+// [1.5] NORMALIZE STOCK — แปลง kg/L → g/mL
+function normalizeStock(stock) {
+  return {
+    flour: stock.flour * 1000,
+    yeast: stock.yeast * 1000,
+    sugar: stock.sugar * 1000,
+    milk: stock.milk * 1000,
+    butter: stock.butter * 1000,
+    egg: stock.egg,
+    redbean: stock.redbean * 1000,
+    cocoa: stock.cocoa
+  };
+}
+// [2] CORE — Stock Check (วัตถุดิบ)
+function stockCheck(memory) {
+  let { stock, recipe, productionOrder, costRates } = memory;
+  stock = normalizeStock(stock);
+  const needed = {}; // รวมยอดใช้ทุกเมนู ต่อวัตถุดิบ (ไม่รวมไข่)
+  for (const item in productionOrder) {
+    for (const mat in recipe[item]) {
+      if (mat === "egg") continue;
+      needed[mat] = (needed[mat] || 0) + recipe[item][mat] * productionOrder[item];
+    }
+  }
+
+  const ratios = Object.keys(needed).map(mat => stock[mat] / needed[mat]);
+  const minRatio = Math.min(...ratios, 1); // ไม่เกิน 1 (ไม่ scale ขึ้น)
+
+  const actualProduced = {};
+  for (const item in productionOrder) {
+    actualProduced[item] = Math.floor(productionOrder[item] * minRatio); // ปัดลง
+  }
+
+  // ไข่: รวมยอดใช้ทุกเมนู แล้วปัดขึ้นเป็นจำนวนเต็มฟอง
+  let eggNeeded = 0;
+  for (const item in actualProduced) {
+    eggNeeded += recipe[item].egg * actualProduced[item];
+  }
+  const eggActual = Math.ceil(eggNeeded);
+  const eggWasteBaht = (eggActual - eggNeeded) * costRates.egg;
+
+  return { actualProduced, needed, minRatio, eggNeeded, eggActual, eggWasteBaht };
+}
+
+// [3] OUTPUT (การผลิต)
+function outputProduction(memory, checkResult) {
+  const { recipe, costRates } = memory;
+  const { actualProduced, eggActual, eggWasteBaht } = checkResult;
+
+  let totalCost = 0;
+  const unitCost = {};
+  for (const item in actualProduced) {
+    let c = 0;
+    for (const mat in recipe[item]) {
+      c += recipe[item][mat] * costRates[mat]; // costRates.egg = 125/30 ต่อฟอง (ราคาตามสูตร)
+    }
+    unitCost[item] = c;
+    totalCost += c * actualProduced[item];
+  }
+
+  return { unitCost, totalCost, eggWasteBaht, totalCostWithWaste: totalCost + eggWasteBaht };
+}
+
+// [4] CUSTOMER LAYER — อ้างอิง Customergen..txt (generateDailyCustomers)
+// ใช้ฟังก์ชันเดิมจากไฟล์นั้นตรง ๆ ไม่ก็อปมาซ้ำที่นี่
+
+// [5] SALES LAYER — Weighted Preference (k=1.5) + Walk-away Chance +
+// Variable Quantity + Daily Hype Item + Diminishing Appeal
+// เตรียมก่อนเรียก salesLayer() ทุกวัน:
+//   consecutiveDays[item]: นับวันติดต่อกันที่เมนูนี้ถูกผลิต (รีเซ็ตเป็น 0 ถ้าวันนี้ไม่ผลิต)
+//   appealDecay[item] = Math.max(0.6, 1 - 0.03 * consecutiveDays[item])
+//   hypeItem = สุ่มเลือก 1 เมนูจากที่ผลิตวันนี้ (ได้ weight โบนัส 1.5x)
+function salesLayer(customers, availableStock, prices, hypeItem, appealDecay, walkAwayChance = 0.05) {
+  const sold = {};
+  for (const item in availableStock) sold[item] = 0;
+  let walkedAway = 0;
+  const k = 1.5; // ระดับความสำคัญของราคา
+
+  for (let c = 0; c < customers; c++) {
+    if (Math.random() < walkAwayChance) { walkedAway++; continue; } // เดินหนีเองแม้ของยังพอ
+
+    const avail = Object.keys(availableStock).filter(i => availableStock[i] > 0);
+    if (avail.length === 0) { walkedAway++; continue; }
+
+    // weight = ราคา x เมนูฮิตวันนี้ (1.5x ถ้าตรง) x diminishing appeal
+    const weights = avail.map(item => {
+      let w = 1 / Math.pow(prices[item], k);
+      if (item === hypeItem) w *= 1.5;
+      w *= (appealDecay[item] || 1);
+      return w;
+    });
+    const sumWeights = weights.reduce((a, b) => a + b, 0);
+
+    // เลือกเมนูแบบสุ่มถ่วงน้ำหนัก (weighted random)
+    let r = Math.random() * sumWeights;
+    let choice = avail[avail.length - 1]; // fallback
+    for (let i = 0; i < avail.length; i++) {
+      r -= weights[i];
+      if (r <= 0) { choice = avail[i]; break; }
+    }
+
+    // ลูกค้าอยากได้ 1-3 ชิ้น (70%/20%/10%) ซื้อเท่าที่มี
+    const roll = Math.random();
+    const wantQty = roll < 0.7 ? 1 : roll < 0.9 ? 2 : 3;
+    const actualQty = Math.min(wantQty, availableStock[choice]);
+
+    availableStock[choice] -= actualQty;
+    sold[choice] += actualQty;
+  }
+
+  const revenue = Object.keys(sold).reduce((sum, i) => sum + sold[i] * prices[i], 0);
+  return { sold, remainingStock: availableStock, walkedAway, revenue };
+}
+
+// [6] REORDER LOGIC LAYER — ทำหลังจบ Sales Layer ของแต่ละวัน
+// stock/stockMax/refilled เป็นหน่วยแสดงผล kg/L — คิดราคาต้องแปลงผ่าน normalizeStock()
+// ก่อนคูณ costRates (ที่เป็นบาท/g) เสมอ ห้ามคูณ stock กับ costRates ตรงๆ
+// reorderThreshold ตัวอย่างรูปร่าง: { flour: 0.10, yeast: 0.10, sugar: 0.10,
+//   milk: 0.15, butter: 0.15, redbean: 0.30, egg: 0.20, cocoa: 0.10 }
+function reorderLayer(stock, stockMax, costRates, reorderThreshold, panItems = ["egg"]) {
+  let reorderCost = 0;
+  const refilled = {};
+  const normStock = normalizeStock(stock);
+  const normStockMax = normalizeStock(stockMax);
+  for (const mat in stock) {
+    const threshold = reorderThreshold[mat] * stockMax[mat];
+    if (stock[mat] < threshold) {
+      let refillAmount = stockMax[mat] - stock[mat]; // หน่วยแสดงผล (kg/L/ฟอง)
+      if (panItems.includes(mat)) refillAmount = Math.ceil(refillAmount); // ปัดขึ้นเป็นแผงเต็ม
+
+      let refillAmountCost = normStockMax[mat] - normStock[mat]; // หน่วยคำนวณ (g/mL/ฟอง) ให้ตรงกับ costRates
+      if (panItems.includes(mat)) refillAmountCost = Math.ceil(refillAmountCost);
+      reorderCost += refillAmountCost * costRates[mat];
+
+      stock[mat] = stockMax[mat];
+      refilled[mat] = refillAmount;
+    }
+  }
+  return { stock, reorderCost, refilled };
+}
+
+// [7] OUTPUT (ยอดขาย) — สูตรเงินสด
+// productionCostToday ไม่ใช่เงินสดที่จ่ายจริง (จ่ายไปแล้วตอนซื้อสต็อกเริ่มต้น/reorder)
+// จึงไม่ใช้คำนวณ cashEnd — return ไว้เป็นตัวเลขรายงาน COGS/margin ต่อวันเท่านั้น
+function outputSales(cashStart, productionCostToday, revenueToday, reorderCostToday) {
+  const cashEnd = cashStart + revenueToday - reorderCostToday;
+  return { cashStart, productionCostToday, revenueToday, reorderCostToday, cashEnd };
+}
+
+/* 📎 ประวัติ Patch ทั้งหมด (ทำไม, ทางเลือกที่ปฏิเสธ, ผลทดสอบ): ดู Patch_Log.txt */

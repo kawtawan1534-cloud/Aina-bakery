@@ -1,0 +1,24 @@
+⚠️ ตั้งแต่ Patch 5.0.0: ไฟล์นี้เป็นเอกสารอ่านอ้างอิงสำหรับคนเท่านั้น
+ไม่ใช่แหล่งข้อมูลที่ engine ใช้คำนวณอีกต่อไป — ตัวจริงที่ Parallel Engine Core.ps1
+อ่านคือ "Production Recipe per Piece.json" (ไฟล์คู่กัน) ถ้าจะปรับสูตร/ราคา
+วัตถุดิบ ต้องแก้ที่ .json ไฟล์นั้น ไม่ใช่ที่นี่ (แก้ที่นี่แล้วไม่มีผลกับเกมจริง)
+═══════════════════════════════════════
+
+const recipe = {
+  shokupan: { flour: 80, yeast: 3, milk: 120, butter: 15, sugar: 15, egg: 0.1 },
+  melonpan: { flour: 110, yeast: 4, milk: 100, butter: 45, sugar: 50, egg: 0.25 },
+  anpan: { flour: 70, yeast: 3, milk: 80, butter: 15, redbean: 50, sugar: 20, egg: 0.15 },
+  creampan: { flour: 70, yeast: 3, milk: 180, butter: 20, sugar: 40, egg: 0.3 },
+  koronepan: { flour: 100, yeast: 4, milk: 100, butter: 30, sugar: 30, egg: 0.2, cocoa: 30 }
+};
+
+const costRates = {
+  flour: 0.04,      // บาท/g
+  yeast: 0.30,       // บาท/g
+  milk: 0.06,        // บาท/mL
+  butter: 0.25,       // บาท/g
+  sugar: 0.03,        // บาท/g
+  egg: 125 / 30,      // บาท/ฟอง (≈4.1667)
+  redbean: 0.14,       // บาท/g
+  cocoa: 0.32          // บาท/g
+};

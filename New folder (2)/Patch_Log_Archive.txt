@@ -1,0 +1,200 @@
+﻿═══════════════════════════════════════
+บันทึกแพตช์ (Patch Log) — ARCHIVE: Patch 1 – 4.5.0 (ยุคก่อน Engine ตัวจริง)
+ประวัติต่อจากนี้ (Patch 5.0.0 เป็นต้นไป) อยู่ที่ Patch_Log.txt (ไฟล์หลัก)
+อ้างอิงคู่กับ: Engine Noname.txt (pseudocode ยุคนั้น)
+═══════════════════════════════════════
+
+Patch 1 (Gen 1 เริ่มต้น): Memory → Core → Output (การผลิตเท่านั้น)
+ 
+Patch 2: เปลี่ยนชื่อเป็น Engine Noname V1.1.1 เพิ่ม Customer Layer + Sales Core + Output (ยอดขาย)
+  - เชื่อม Customergen..txt เข้ากับ Engine อย่างเป็นทางการ
+  - ยังไม่มี: randomization ที่ซับซ้อนกว่า Base+Noise, weekday pattern,
+    dual-core architecture (แยก Core การผลิต/การเงิน)
+ 
+Patch 3: ปรับเงื่อนไข Sales Core → เปลี่ยนชื่อเป็น Sales Layer
+  เพื่อให้ตรงกับหลักการ "จับคู่ลูกค้ากับสินค้าที่ผลิตสำเร็จ"
+ 
+Patch 4 (ล่าสุด): ยกเลิกยอดผลิตอัตโนมัติจาก Memory Layer
+  - Core ไม่คำนวณยอดผลิตให้เองอีกต่อไป (เดิมอ้างอิงคงที่ 20/15/10
+    จากบรรทัด "อ้างอิงยอดผลิตโดยประมาณ" ใน Stock เริ่มต้น.txt
+    → บรรทัดนั้นแก้เป็นข้อมูลย้อนหลัง ไม่ใช่คำสั่งผลิตอีกต่อไป)
+  - ผู้เล่นต้องสั่งยอดผลิตเองทุกวัน ก่อนเห็นจำนวนลูกค้าของวันนั้น
+  - Core layer เปลี่ยนชื่อ step "MIN() Bottleneck Check" → "Stock Check (วัตถุดิบ)"
+  - ยืนยันเงื่อนไข Reorder Logic Layer เป็นทางการ
+    (ดูรายละเอียด logic ทั้งหมดที่ Engine Noname.txt (เวอร์ชันปัจจุบัน)
+    กล่อง 📤 Reorder Logic Layer โดยตรง — ไม่ซ้ำเนื้อหาไว้ที่นี่)
+
+Patch 4.2.0: เปลี่ยนสูตรปัดจำนวนลูกค้าใน Customer Layer
+  - Customergen.txt: Math.round() → Math.floor()
+    (ไม่ปัดขึ้นแม้เศษ ≥ 0.5 อีกต่อไป — ลดจำนวนลูกค้าเฉลี่ยลงเล็กน้อย)
+  - ทดสอบผ่าน Patch Draft Testing Mode ใน Day 10-11 (จำลอง) ก่อน merge
+  - Layer ที่กระทบ: Customer Layer → ส่งผลต่อ Sales Layer, Output ยอดขาย
+  - Patch draft ส่วนที่ 2 (Sales Layer Demand Ideas: 2.1-2.5) ยังไม่ merge
+    ยังอยู่ในสถานะ Draft ใน Patch Draft.txt ต่อไป (ไฟล์นี้ชื่อ "Patch draft
+    4.x.x.txt" ตอนบันทึก entry นี้ไว้ ภายหลังเปลี่ยนชื่อเป็น Patch Draft.txt)
+
+Patch 4.3.0: เพิ่ม Weighted Preference ใน Sales Layer
+  - แทนที่ uniform random ด้วย weight = 1/(price^k), k=1.5
+  - Shokupan ~40.1%, Anpan ~31.8%, Melonpan ~28.2%
+  - ทดสอบผ่าน Patch Draft Testing Mode ใน Day 7 (จำลอง) ก่อน merge
+  - Layer ที่กระทบ: SALES LAYER → ส่งผลต่อ Output ยอดขาย
+
+Patch 4.3.1: ปรับสต็อกเริ่มต้นใหม่ (Patch 3.1)
+  - สต็อก stockMax เปลี่ยนเป็น kg/L (ประหยัด token)
+  - Engine.txt Stock Check: ปรับคำนวนแปลง stock จาก kg/L → g/mL ก่อนใช้
+  - ต้นทุนเริ่มต้น: 1,600 บาท (เหมือนเดิม)
+  - เงินเริ่มต้น: 36,400 บาท (เพิ่มจาก 36,285 บาท)
+  - ทดสอบผ่าน Patch Draft Testing Mode ใน Day 1-4 ก่อนอัพแพท
+  - Layer ที่กระทบ: MEMORY LAYER (stockMax) → STOCK CHECK
+
+Patch 4.3.2: แก้บั๊กหน่วยเงินใน Reorder Logic Layer (ตกหล่นจาก Patch 4.3.1)
+  - อาการ: reorderLayer() เอา refillAmount หน่วย kg/L คูณกับ costRates
+    ที่เป็นบาท/g ตรงๆ โดยไม่ผ่าน normalizeStock() ก่อน → reorderCost
+    ต่ำกว่าจริง 1000 เท่าสำหรับวัตถุดิบทุกตัวยกเว้นไข่ (หน่วยฟองเหมือนกันทั้งสองฝั่ง
+    เลยไม่กระทบ)
+  - แก้โดยเรียก normalizeStock() ซ้ำเฉพาะตอนคิด reorderCost (ไม่เขียนสูตรแปลง
+    หน่วยซ้ำที่อื่น) ส่วน stock/refilled ที่ return ยังเป็น kg/L เหมือนเดิม
+  - พบระหว่างจำลอง Day 7 (Patch Draft Testing Mode): reorderCost น้ำตาล
+    3.455 kg คำนวณได้ 0.10 บาท ทั้งที่ควรเป็น ~103.65 บาท
+  - Layer ที่กระทบ: REORDER LOGIC LAYER → ส่งผลต่อ outputSales (cashEnd)
+    ของทุกวันที่มีการ reorder วัตถุดิบนอกจากไข่
+
+Patch 4.3.3: ปรับ % Reorder ไม่เท่ากันแต่ละวัตถุดิบ (Patch draft 3.2)
+  - เดิม reorderLayer() ใช้ threshold 10% ของ stockMax คงที่ทุกวัตถุดิบ
+  - เปลี่ยนเป็น reorderThreshold ต่อวัตถุดิบ: flour/yeast/sugar/egg/cocoa
+    คงเดิม 10%, milk/butter ปรับเป็น 15%, redbean ปรับเป็น 30%
+    (ตัวที่เคยเป็นคอขวดบ่อยให้ reorder ไวขึ้น)
+  - ทดสอบผ่าน Patch Draft Testing Mode ใน Day 3-7 (จำลองรอบ reset ใหม่)
+  - Layer ที่กระทบ: REORDER LOGIC LAYER
+
+Patch 4.3.4: เพิ่ม stockMax ถั่วแดง (Patch draft 3.5)
+  - redbean stockMax: 0.5 → 2.0 kg — เดิมคุ้มแค่ ~1.5-2 วัน ในขณะที่วัตถุดิบ
+    อื่น (แป้ง/น้ำตาล) มี buffer ~7 วัน ทำให้ redbean เป็นคอขวดซ้ำแทบทุกวัน
+    ตั้งแต่ Day 2 ของการทดสอบ
+  - ต้นทุนวัตถุดิบเริ่มต้น: 1,600 → 1,810 บาท (+210 บาท จาก redbean เพิ่ม)
+  - เงินเริ่มต้น: 36,400 → 36,190 บาท
+  - ทดสอบผ่าน Patch Draft Testing Mode ใน Day 3-7 (คู่กับ Patch 4.3.3)
+  - Layer ที่กระทบ: MEMORY LAYER (stockMax) → STOCK CHECK, REORDER LOGIC LAYER
+
+Patch 4.3.5: เจนจำนวนการผลิตเอง — autoProductionOrder() (Patch draft 3.4)
+  - เพิ่มทางเลือกให้ productionOrder มาจากสูตรอัตโนมัติแทน Player Input ได้
+    ปรับทีละก้าวตามสัญญาณ sold-out/leftover ของเมื่อวาน (ขายหมด+ผลิตครบตาม
+    สั่ง → เพิ่ม 20%, เหลือเกินครึ่ง → ลด 15%, นอกนั้นคงเดิม)
+  - ปฏิเสธแนวทางอื่น 2 แบบก่อนสรุปสูตรนี้: (1) ใช้สูตร weight เดียวกับ
+    Sales Layer พยากรณ์ยอดผลิต — ถือเป็น meta-knowledge ที่ร้านไม่ควรรู้
+    (2) ใช้ค่าเฉลี่ย sold ย้อนหลัง 3 วันตรงๆ — ติดปัญหา censored demand
+    (sold ถูกบังตาด้วยจำนวนที่ผลิตเอง) ทำให้ยอดผลิตค้างที่จุดเดิมไม่ขยับ
+  - v3 → v4: เพิ่มเงื่อนไข produced >= ordered ก่อนนับเป็นสัญญาณ "ขายหมด →
+    เพิ่ม" ไม่งั้นวันที่วัตถุดิบขาด (produced ต่ำเพราะ bottleneck ไม่ใช่เพราะ
+    ดีมานด์สูง) จะโดนเข้าใจผิดว่าดีมานด์พุ่ง ดันยอดสั่งขึ้นเรื่อย ๆ แบบไม่มี
+    เหตุผลรองรับ (พบจากจำลอง Day 6→7: สั่ง 6/8/6 ผลิตได้จริงแค่ 3/4/3 เพราะ
+    bottleneck ขายหมดของน้อย ๆ แล้ว v3 ดันสั่งเพิ่มเป็น 8/10/8 ทั้งที่ลูกค้า
+    เท่าเดิม)
+  - ทดสอบผ่าน Patch Draft Testing Mode ใน Day 1-7 (สองรอบ: v3 แล้ว reset
+    ทดสอบ v4 ใหม่)
+  - หมายเหตุ: ยังไม่ปรับสูตร Customergen (Patch draft 3.3) คู่กัน — ยอด
+    ลูกค้าที่พยากรณ์แม่นขึ้นจะช่วยให้สัญญาณ sold-out/leftover แม่นขึ้นตามไปด้วย
+  - Layer ที่กระทบ: MEMORY LAYER → ส่งผลต่อ STOCK CHECK ทั้ง pipeline
+
+Patch 4.3.6: ปรับ autoProductionOrder v4 → v6 (Patch draft [Z])
+  - v4 → v5: โซนสมดุลเดิม (ขาย 50-100% ของที่ผลิต) ไม่เคยลดยอดเลย ทำให้
+    ของเหลือทิ้งสะสมเยอะแทบทุกวัน (Day 4:10, Day 5:10, Day 7:11, Day 8:9
+    ชิ้น) จึงแบ่งโซนละเอียดขึ้น: <50% ลด 15%, 50-75% ลดเบาๆ 7%, 75-100%
+    (ไม่หมดเกลี้ยง) ถือเป็นโซนสมดุลจริงและคงเดิม
+  - v5 → v6: v5 ใช้ Math.ceil() กับทุกกรณีรวมถึงตอนลด ทำให้ปริมาณน้อยๆ
+    (6-8 ชิ้น) ลด 7% แล้วปัดขึ้นกลับไปเท่าเดิมพอดี ไม่ลดจริง (พบจาก
+    Day 10→11: 7×0.93=6.51→ceil=7 เท่าเดิม, 6×0.93=5.58→ceil=6 เท่าเดิม)
+    แก้โดยใช้ Math.floor() เฉพาะตอนลด (เพิ่มยังคง ceil() ไว้ให้โตเต็มที่
+    เวลาขายหมดเกลี้ยง)
+  - ทดสอบผ่าน Patch Draft Testing Mode ใน Day 9-15 (v5 เริ่ม Day 9, แก้เป็น
+    v6 ทดสอบต่อ Day 12-15 เห็นของเหลือลดลงจริง 9→6 ชิ้นในสองวันหลังสุด)
+  - Layer ที่กระทบ: MEMORY LAYER → ส่งผลต่อ STOCK CHECK ทั้ง pipeline
+
+Patch 4.4.0: แก้บั๊กหักเงินสดซ้ำซ้อนใน outputSales() (Patch Numbering Y)
+  - อาการ: cashEnd = cashStart - productionCostToday + revenueToday -
+    reorderCostToday หักเงินสดวัตถุดิบ 2 รอบสำหรับของชุดเดียวกัน —
+    reorderCostToday คือเงินสดจริงที่จ่ายตอนซื้อวัตถุดิบมาเติมสต็อก ส่วน
+    productionCostToday คือมูลค่าวัตถุดิบที่ "ใช้ไป" ตอนผลิต ซึ่งจ่ายเงินไป
+    แล้วตั้งแต่ตอน reorder (หรือตอนซื้อสต็อกเริ่มต้นวันเปิดร้าน) ไม่ใช่เงินสด
+    ใหม่ที่ต้องจ่ายอีก
+  - พบระหว่างวิเคราะห์ย้อนหลัง Day 1-16 (จำลอง): รายรับรวม 5,717 บาท,
+    ต้นทุนผลิตรวม 5,130 บาท, reorder รวม 4,383 บาท → ขาดทุนสุทธิ 3,796 บาท
+    ทั้งที่กำไรจากของที่ขายได้จริง (มาร์จิ้น ~40%) เป็นบวก 2,264 บาท —
+    ถ้าคิดสูตรใหม่ (ไม่หัก productionCost) กำไรสุทธิ 16 วันจะเป็น +1,334
+    บาทแทนที่จะขาดทุน -3,796 บาท
+  - แก้โดยเอา productionCostToday ออกจากสูตรคำนวณ cashEnd แต่ยัง return
+    ค่าไว้เป็นตัวเลขรายงาน (COGS/margin ต่อวัน) — สูตรใหม่:
+    cashEnd = cashStart + revenueToday - reorderCostToday
+  - หมวด Y (ไม่ใช่ Z) เพราะเปลี่ยนโครงสร้างสูตร outputSales() ทั้งเทอม
+    ไม่ใช่แค่ปรับ coefficient/threshold เดียวแบบ Patch 4.3.2
+  - Layer ที่กระทบ: OUTPUT (ยอดขาย) → กระทบเงินสดคงเหลือทุกวันย้อนหลัง
+    ตั้งแต่มี Reorder Logic Layer (Patch 4)
+
+Patch 4.4.1: ปรับ reorderThreshold ของไข่ (Patch draft [Z])
+  - อาการ: Day 8 (จำลอง) ไข่ลงไปเหลือ 1 ฟองก่อนโดนเติมเต็มแผง (Day 9) เสีย
+    เงินครั้งเดียว 120.83 บาท — threshold เดิม 10% (3 ฟอง) ต่ำเกินไปเทียบกับ
+    milk/butter/redbean ที่ปรับไปแล้วตอน Patch 4.3.3 (15%/15%/30%) แต่ egg
+    ไม่ได้ถูกรวมด้วยตอนนั้นเพราะยังไม่เห็นปัญหา
+  - แก้: reorderThreshold.egg 0.10 → 0.20 (3 ฟอง → 6 ฟอง)
+  - ทดสอบผ่าน Patch Draft Testing Mode ใน Day 10-17
+  - Layer ที่กระทบ: REORDER LOGIC LAYER
+
+Patch 4.4.2: ปรับสูตร Customergen v1 → v3 (Patch draft [Z])
+  - อาการ: ยอดลูกค้า Day 1-18 (จำลอง) หดตัวลงต่อเนื่องมีทิศทางเดียว
+    (14→7 คน) ทั้งที่มี noise ±15% สองทางเท่ากัน ไม่ใช่แค่แกว่งสุ่ม
+  - สาเหตุ: base = เฉลี่ย 3 วันล่าสุด ทำหน้าที่เหมือนตัวกรองลด variance —
+    เฉลี่ยซ้อนเฉลี่ยทุกวันทำให้ความสุ่มถูกกลืนหายไปเรื่อยๆ ไม่เกี่ยวกับ
+    ช่วง noise เลย
+  - แก้ (v3): ขยาย noise ±15%→±25% + ผูกการเติบโตกับคุณภาพบริการ (ถ้า
+    walkedAway rate เฉลี่ย 3 วันต่ำ → โตเฉลี่ย ~5%/รอบ, ถ้าสูง → หดตัวแทน)
+    + ใส่เพดานตลาด maxCustomers=30 พร้อม saturationFactor ให้โตช้าลงเมื่อ
+    ใกล้เพดาน (ไม่ใช่โตทบต้นไม่มีที่สิ้นสุด)
+  - เหตุผลออกแบบ: วงจรป้อนกลับผูกกับ stockCheck() อยู่แล้ว (วัตถุดิบไม่พอ
+    → ผลิตน้อย → walkedAway เพิ่ม → ฉุด growth เอง) ไม่ต้องเขียนกลไกเบรก
+    แยกต่างหาก — ถ้าลูกค้าชนเพดานแล้ว plateau เฉยๆ ไม่ผูกอัตโนมัติกับการ
+    ปลดล็อกเมนูใหม่ (ผู้เล่นตัดสินใจเองว่าจะปลดล็อก Creampan/Koronepan ใน
+    Production.txt เมื่อไหร่ ตาม Minimal First)
+  - เพิ่ม state ใหม่ walkedAwayHistory คู่กับ history เดิม (ต้องส่งเข้า
+    generateDailyCustomers() เป็น parameter ที่ 2)
+  - ทดสอบผ่าน Patch Draft Testing Mode ใน Day 19-26 (ลูกค้าขยับขึ้นจาก
+    7→9→10→11 คนใน 4 วันแรกตามที่ออกแบบไว้ เพราะ walkRate เป็น 0 ต่อเนื่อง)
+  - Layer ที่กระทบ: CUSTOMER LAYER (Customergen..txt) → ส่งผลต่อ SALES LAYER
+
+Patch 4.4.3: เตือนล่วงหน้าก่อนถึง reorder threshold จริง (Patch draft [Z])
+  - เหตุผล: reorderThreshold เดิมเติมสต็อกทันทีที่ต่ำกว่าเกณฑ์ แต่ผู้เล่น
+    ไม่เห็นสัญญาณล่วงหน้าเลยว่าวัตถุดิบตัวไหนใกล้ถึงจุดนั้น
+  - แก้: เกณฑ์เตือน = 1.5 เท่าของ reorderThreshold เดิม (ขยับตามสัดส่วน
+    ของแต่ละวัตถุดิบเอง เช่น redbean เตือนที่ 45%, flour เตือนที่ 15%)
+    ถ้า reorderThreshold*stockMax <= stock < 1.5*reorderThreshold*stockMax
+    → ขึ้นคำเตือนในรายงาน (ยังไม่ถึงเกณฑ์เติมจริง)
+  - เป็นตัวเลขแสดงผลเท่านั้น ไม่กระทบ reorderLayer()/reorderCost/state ใดๆ
+    ของเกม (ดูรูปแบบการแสดงผลที่ Report Format.txt)
+  - ทดสอบผ่าน Patch Draft Testing Mode ใน Day 24-26 (เตือนถูกทั้ง redbean
+    และ sugar ก่อนโดนเติมจริงในวันถัดมาทั้งสองครั้ง)
+  - Layer ที่กระทบ: REORDER LOGIC LAYER (แสดงผลเท่านั้น ไม่กระทบการคำนวณ)
+
+Patch 4.5.0: Walk-away Chance + Variable Quantity + Daily Hype Item +
+Diminishing Appeal รวมเป็นแพทเดียว (Patch Numbering Y)
+  - เหตุผลรวม: ทั้ง 4 หัวข้อเดิม (ค้างอยู่ใน draft ตั้งแต่ต้น ไม่มีรายละเอียด
+    มาก่อน) เป็นระบบฝั่งดีมานด์ลูกค้าที่ป้อนเข้า salesLayer() เดียวกัน
+    ออกแบบรวมทีเดียวประหยัด context แทนที่จะทำทีละหัวข้อ
+  - Walk-away Chance: ลูกค้าบางคนเดินหนีเองแม้ของยังพอ (5%) — ตั้งต่ำเพราะ
+    ผูกกับ growth ของ Customergen v3 (Patch 4.4.2) อยู่แล้ว ตั้งสูงไปจะกลืน
+    สัญญาณ "ของหมดจริง" ที่ใช้วัดคุณภาพบริการ
+  - Daily Hype Item: สุ่มเลือก 1 เมนูจากที่ผลิตวันนั้นให้ weight โบนัส 1.5x
+    (เทียบเคียง multiplier อื่นในเอนจิน — 1.2x/0.85x ของ autoProductionOrder)
+  - Diminishing Appeal: เมนูที่ขายติดต่อกันหลายวัน weight ลดลง 3%/วัน
+    พื้นต่ำสุด 60% (ที่ ~13 วันถึงพื้น) กันไม่ให้เมนูคลาสสิกขายไม่ได้เลย
+    ต้องเพิ่ม state ใหม่ consecutiveDays[item] คู่กับ producedLast เดิม
+  - Variable Quantity: ลูกค้าซื้อ 1/2/3 ชิ้นต่อครั้ง (70%/20%/10%) แทนที่
+    จะซื้อได้แค่ 1 ชิ้นเสมอ ซื้อเท่าที่มีถ้าของไม่พอตามที่อยากได้
+  - ตัวเลขเริ่มต้นทั้งหมด (5%, 1.5x, 3%/วัน, 60%, 70/20/10%) เป็นจุดเริ่มต้น
+    ที่สมเหตุสมผล ไม่ได้คำนวณจากข้อมูลจริง (เหมือน autoProductionOrder v1
+    ตอนแรก) — Variable Quantity คือตัวที่ควรจูนก่อนตัวอื่นถ้าผลดูแปลก
+  - ทดสอบผ่าน Patch Draft Testing Mode ใน Day 30-35: เมนูฮิตสลับกันทุกวัน
+    (melonpan/anpan), appealDecay ลดลงต่อเนื่อง 97%→82%, walkAwayChance
+    เกิดขึ้นจริง 1 ครั้งใน 35 วัน, Variable Quantity ทำให้บางวันขายได้
+    มากกว่าจำนวนลูกค้า (Day 30: ลูกค้า 10 คน ขายได้ 15 ชิ้น)
+  - Layer ที่กระทบ: SALES LAYER (salesLayer()) → ส่งผลต่อ revenue, sold,
+    walkedAway → กระทบ Customergen v3 (growth loop) และ outputSales ต่อเนื่อง
+
