@@ -853,3 +853,47 @@ Patch 6.5.1: แก้บัค stale2 ขายต่ำกว่าทุน +
     อัตราสนใจซื้อคู่) + orchestrator (`Parallel Engine Core.ps1`, ลบการสุ่ม
     เปิดโปรรายวัน) — ไม่กระทบ Production Plan/Core/Customer/Reorder/
     OperatingExpenses/Output Sales Layer เลย
+
+─────────────────────────────────────
+Patch 6.6.0 (2026-08-14) — ปลดล็อกระบบ N/p growth: ชื่อเสียงร้าน + ลูกค้าประจำ
+ขับเคลื่อน N ทั้งขึ้นและลง
+─────────────────────────────────────
+  - ที่มา: ดราฟ "Patch (Y): เพิ่มปัจจัยภายนอกมาปรับ p (และ N)" ใน
+    `Patch Draft.txt` (บันทึกไว้ 2026-08-12) ผู้เล่นสั่งปลดล็อกตรงๆ
+    (2026-08-14) โดยรับทราบบั๊กวงจรแกว่งสวนทางกับ `AutoProductionOrder()`
+    ที่ยังไม่แก้อยู่แล้ว (ตั้งใจให้เห็นผลจริงก่อนค่อยแพตช์ต่อ ไม่ใช่ออกแบบให้
+    สมบูรณ์ก่อนทดสอบ)
+  - state ใหม่ใน `sim_state.json`: `shopRating` (0-100, เริ่ม 50),
+    `consecutiveGoodDays`, `totalRevenueEarned` (สะสมทั้งเกม — backfill
+    ค่าเริ่มต้นจากผลรวม revenue ใน `sim_daily_log.json` ทั้งหมดตอน merge
+    เพื่อไม่ให้นับใหม่จากศูนย์ทั้งที่เล่นมาแล้ว 128 วัน), `customerPoolN`
+    (แทนค่าคงที่ 30 เดิม — ตอนนี้ขยับได้), `nMilestones` (flag กันปลดซ้ำ:
+    `rev100k`, `rev300k`, `ratingPenalty`)
+  - `Parallel Engine Core.ps1`: ท้ายลูปแต่ละวัน (หลัง `OutputSales()`)
+    คำนวณ `stockOutWalkAway` = ลูกค้าที่เดินหนีเพราะของหมดจริง (ไม่นับ
+    `walkAwayChanceHits` ที่เดินหนีเอง) + `freshRatio` (สัดส่วนของสด/ของขาย
+    รวม) → ได้ `satisfactionDelta` ปรับ `shopRating` พร้อม mean reversion
+    เบาๆ กลับเข้าใกล้ 50 ทุกวัน (กันไม่ให้ rating ค้างสุดโต่งถาวร)
+  - `loyaltyPool` (เพดาน 20) สะสมจาก `consecutiveGoodDays` (วันที่ไม่มีคน
+    เดินหนีเพราะของหมดเลย ติดต่อกัน) → `p = 0.35 + ratingBonus + loyaltyBonus`
+    (clamp 0.05-0.95) มีผลกับลูกค้าของ**วันถัดไป**เท่านั้น (lag 1 วัน
+    เหมือน `AutoProductionOrder()` ตามที่รู้จุดแกว่งไว้แล้ว)
+  - `customerPoolN` ขยับตาม milestone ทั้งขึ้นและลง (ปลดครั้งเดียวต่อ flag
+    กันปลดซ้ำไม่รู้จบ): รายได้สะสมถึง 100,000 → N+5, ถึง 300,000 → N+10,
+    `shopRating` ต่ำกว่า 20 → N-5 (พื้นขั้นต่ำ 30 กันพังถาวร, flag รีเซ็ตได้
+    ถ้า rating ฟื้นเกิน 30 ให้โดนโทษซ้ำได้อีกถ้าแย่ลงอีกรอบ)
+  - เพิ่ม field `shopRating`, `loyaltyPool`, `consecutiveGoodDays`,
+    `customerPoolN`, `customerVisitP`, `totalRevenueEarned` เข้า
+    `sim_report.json`/`sim_daily_log.json` ต่อวัน เพื่อให้ตรวจสอบย้อนหลังได้
+  - ยังไม่ทำ: ระบบ milestone ฝั่ง "shopRating เหนือ 80/ต่ำกว่า 20 ติดต่อกัน
+    30 วัน" (ต้องมีตัวนับ streak แยกอีกชุด — ตัดออกจากรอบนี้เพื่อลดความ
+    ซับซ้อน ปลดแค่ milestone รายได้ + โทษ rating ต่ำแบบทันที), ระบบ
+    "กู้คืน N ที่เสียไปอัตโนมัติ" (ตอนนี้แค่ยอมให้โดนโทษซ้ำได้ ไม่คืน N ให้เอง)
+  - ทดสอบก่อน merge: รัน Day 129 จริงผ่าน orchestrator ปกติ (ไม่มี error,
+    `shopRating`/`customerPoolN`/`customerVisitP` ออกมาตามสูตรที่ตั้งใจ)
+  - อัปเดต header เวอร์ชันบนสุดของ `Parallel Engine Core.ps1` เป็น 6.6.0
+  - Layer ที่กระทบ: orchestrator (`Parallel Engine Core.ps1`) โดยตรง (โหลด/
+    เซฟ state ใหม่ + คำนวณ rating/loyalty/N milestone ท้ายลูป) — ไม่กระทบ
+    ไฟล์ layer ใดใน `Layers\` เลย (ยังไม่แยกเป็น layer เดี่ยว เก็บเป็น inline
+    logic ใน main loop เหมือน hype item — พิจารณาแยกเป็น layer ทีหลังถ้า
+    ซับซ้อนขึ้นอีก)

@@ -1,4 +1,4 @@
-﻿# ===== Parallel Engine Core — Version: 6.5.1 =====
+﻿# ===== Parallel Engine Core — Version: 6.6.0 =====
 # ไฟล์นี้คือ orchestrator ตัวจริง (รันได้จริง) — เชื่อมไฟล์ layer ใน Layers\
 # เข้าด้วยกันตามลำดับ pipeline แล้วสั่งรัน ไม่ใช่ตัวคำนวณเอง (ตัวคำนวณอยู่ใน
 # แต่ละไฟล์ layer) Engine Noname.txt เป็น snapshot pseudocode เก่าไว้อ่าน
@@ -119,6 +119,15 @@ if (Test-Path $StatePath) {
   } else {
     foreach ($it in $items) { $staleStock2[$it] = 0 }
   }
+  # (Patch Draft "N/p growth" ปลดล็อก 2026-08-14) — field ใหม่ ถ้าเซฟเก่าไม่มีให้ตั้งค่าเริ่มต้น
+  $shopRating = if ($saved.PSObject.Properties.Name -contains "shopRating") { [double]$saved.shopRating } else { 50.0 }
+  $consecutiveGoodDays = if ($saved.PSObject.Properties.Name -contains "consecutiveGoodDays") { [int]$saved.consecutiveGoodDays } else { 0 }
+  $totalRevenueEarned = if ($saved.PSObject.Properties.Name -contains "totalRevenueEarned") { [double]$saved.totalRevenueEarned } else { 0.0 }
+  $customerPoolNSaved = if ($saved.PSObject.Properties.Name -contains "customerPoolN") { [int]$saved.customerPoolN } else { 30 }
+  $nMilestones = @{ rev100k = $false; rev300k = $false; ratingPenalty = $false }
+  if ($saved.PSObject.Properties.Name -contains "nMilestones") {
+    foreach ($p in $saved.nMilestones.PSObject.Properties) { $nMilestones[$p.Name] = [bool]$p.Value }
+  }
 } else {
   $stock = @{}
   foreach ($k2 in $stockMax.Keys) { $stock[$k2] = $stockMax[$k2] }
@@ -135,10 +144,20 @@ if (Test-Path $StatePath) {
   $staleStock1 = @{}
   $staleStock2 = @{}
   foreach ($it in $items) { $staleStock1[$it] = 0; $staleStock2[$it] = 0 }
+  $shopRating = 50.0
+  $consecutiveGoodDays = 0
+  $totalRevenueEarned = 0.0
+  $customerPoolNSaved = 30
+  $nMilestones = @{ rev100k = $false; rev300k = $false; ratingPenalty = $false }
 }
 
-$customerPoolN = 30    # จำนวนคนสมมติในละแวกที่มีโอกาสแวะร้าน (จุดเกาะปัจจัยขนาดตลาดในอนาคต)
-$customerVisitP = 0.35 # โอกาสที่แต่ละคนจะแวะวันนี้ (จุดเกาะปัจจัยความน่าดึงดูดรายวัน/ระยะยาวในอนาคต)
+# (Patch Draft "N/p growth" ปลดล็อก 2026-08-14) — N/p ตอนนี้ไม่ใช่ค่าคงที่ตายตัวอีก
+# ต่อไป: $customerPoolN เริ่มจากค่าที่เซฟไว้ (ขยับตาม milestone รายได้/ชื่อเสียง)
+# ส่วน $customerVisitP คำนวณจาก ratingBonus/loyaltyBonus ท้ายลูปของวันก่อนหน้า
+# (มี lag 1 วันเสมอ เหมือน AutoProductionOrder() — บั๊กวงจรแกว่งที่รู้อยู่แล้ว
+# ยังไม่แก้ ดู Patch Draft.txt)
+$customerPoolN = $customerPoolNSaved
+$customerVisitP = [Math]::Max(0.05, [Math]::Min(0.95, 0.35 + (($shopRating - 50) * 0.003) + ([Math]::Min(20, $consecutiveGoodDays * 0.5) * 0.005)))
 $walkAwayChance = 0.05
 # (Patch 6.5.1) เดิมสุ่มทั้งวันว่าเปิดโปร "ซื้อคู่คุ้มกว่า" มั้ย (10%/วัน) — เปลี่ยน
 # เป็นเปิดโปรถาวรทุกวันแทน สุ่มแค่ระดับลูกค้าแต่ละคนว่าสนใจโปรมั้ย (ผ่าน
@@ -241,6 +260,31 @@ for ($day = ($lastDay + 1); $day -le $TargetDay; $day++) {
   $cashEnd = $outputSales.cashEnd
   $cash = $cashEnd
 
+  # (Patch Draft "N/p growth" ปลดล็อก 2026-08-14) — shopRating/loyalty/N milestone
+  # ผลลัพธ์วันนี้จะไปมีผลกับ p/N ของ "วันถัดไป" เท่านั้น (lag 1 วัน เหมือน
+  # AutoProductionOrder()) ตัวขับเคลื่อนคือ shopRating (พฤติกรรมลูกค้าจริงวันนี้)
+  $stockOutWalkAway = $sales.walkedAway - $sales.walkAwayChanceHits
+  $totalSoldToday = 0
+  foreach ($it in $items) { $totalSoldToday += $sales.sold[$it] }
+  $freshSoldToday = 0
+  foreach ($it in $items) { $freshSoldToday += $sales.soldFresh[$it] }
+  $freshRatio = if ($totalSoldToday -gt 0) { $freshSoldToday / $totalSoldToday } else { 0.5 }
+  $satisfactionDelta = (($freshRatio - 0.5) * 4) - ($stockOutWalkAway * 2)
+  $shopRating = $shopRating + $satisfactionDelta
+  $shopRating = $shopRating + ((50 - $shopRating) * 0.05) # mean reversion เบาๆ กลับเข้าใกล้ 50
+  $shopRating = [Math]::Max(0, [Math]::Min(100, $shopRating))
+
+  $consecutiveGoodDays = if ($stockOutWalkAway -eq 0) { $consecutiveGoodDays + 1 } else { 0 }
+  $totalRevenueEarned += $sales.revenue
+
+  if (-not $nMilestones.rev100k -and $totalRevenueEarned -ge 100000) { $customerPoolN += 5; $nMilestones.rev100k = $true }
+  if (-not $nMilestones.rev300k -and $totalRevenueEarned -ge 300000) { $customerPoolN += 10; $nMilestones.rev300k = $true }
+  if (-not $nMilestones.ratingPenalty -and $shopRating -lt 20) { $customerPoolN = [Math]::Max(30, $customerPoolN - 5); $nMilestones.ratingPenalty = $true }
+  if ($nMilestones.ratingPenalty -and $shopRating -gt 30) { $nMilestones.ratingPenalty = $false } # เผื่อโดนโทษซ้ำได้ถ้ารีวิวแย่ลงอีกรอบ
+
+  $loyaltyPool = [Math]::Min(20, $consecutiveGoodDays * 0.5)
+  $customerVisitP = [Math]::Max(0.05, [Math]::Min(0.95, 0.35 + (($shopRating - 50) * 0.003) + ($loyaltyPool * 0.005)))
+
   # เก็บเฉพาะ field ที่รายงานใช้จริง — ตัวที่คำนวณย้อนกลับได้จาก field อื่น
   # (totalCost, eggNeeded/eggActual, stockFinal, weightPct) ไม่เก็บซ้ำให้ log บวม
   $report = @{
@@ -282,6 +326,13 @@ for ($day = ($lastDay + 1); $day -le $TargetDay; $day++) {
     opExpenseCost = $opExpenses.opExpenseCost
     rentCost = $opExpenses.rentCost
     cashEnd = $cashEnd
+    shopRating = $shopRating
+    loyaltyPool = $loyaltyPool
+    consecutiveGoodDays = $consecutiveGoodDays
+    customerPoolN = $customerPoolN
+    customerVisitP = $customerVisitP
+    totalRevenueEarned = $totalRevenueEarned
+    nMilestones = $nMilestones
   }
   $dayReports += $report
 
@@ -307,6 +358,6 @@ if (Test-Path $LogPath) {
 foreach ($r in $dayReports) { [void]$combinedLog.Add($r) }
 $combinedLog | ConvertTo-Json -Depth 6 | Set-Content -Path $LogPath -Encoding utf8
 
-$state = @{ stock=$stock; cash=$cash; history=$history; walkedAwayHistory=$walkedAwayHistory; lastDay=$TargetDay; prevOrder=$prevOrder; producedLast=$producedLast; soldLast=$soldLast; consecutiveDays=$consecutiveDays; staleStock1=$staleStock1; staleStock2=$staleStock2 }
+$state = @{ stock=$stock; cash=$cash; history=$history; walkedAwayHistory=$walkedAwayHistory; lastDay=$TargetDay; prevOrder=$prevOrder; producedLast=$producedLast; soldLast=$soldLast; consecutiveDays=$consecutiveDays; staleStock1=$staleStock1; staleStock2=$staleStock2; shopRating=$shopRating; consecutiveGoodDays=$consecutiveGoodDays; totalRevenueEarned=$totalRevenueEarned; customerPoolN=$customerPoolN; nMilestones=$nMilestones }
 $state | ConvertTo-Json | Set-Content -Path $StatePath -Encoding utf8
 
