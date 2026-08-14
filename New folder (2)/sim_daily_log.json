@@ -14954,5 +14954,225 @@
       "anpan": 2,
       "melonpan": 13
     }
+  },
+  {
+    "threshold": {
+      "milk": 750.0,
+      "cocoa": 0.0,
+      "flour": 1000.0,
+      "yeast": 100.0,
+      "butter": 180.0,
+      "egg": 6.0,
+      "redbean": 600.0,
+      "sugar": 350.0
+    },
+    "refilledCost": {
+      "milk": 292.8
+    },
+    "opExpenseCost": 74.3,
+    "productionOrder": {
+      "melonpan": 8,
+      "shokupan": 6,
+      "anpan": 2
+    },
+    "customers": 12,
+    "actualProduced": {
+      "anpan": 1.0,
+      "melonpan": 5.0,
+      "shokupan": 3.0
+    },
+    "packagingCost": 18.0,
+    "ratios": {
+      "redbean": 14.5,
+      "flour": 4.346666666666667,
+      "yeast": 9.392857142857142,
+      "butter": 1.65625,
+      "milk": 0.6309523809523809,
+      "sugar": 1.6981132075471699
+    },
+    "walkAwayChanceHits": 0,
+    "discardWasteBaht": 0.0,
+    "stockAfterProduction": {
+      "redbean": 1400.0,
+      "cocoa": 0.0,
+      "flour": 5660.0,
+      "yeast": 494.0,
+      "butter": 510.0,
+      "egg": 19.0,
+      "milk": 120.0,
+      "sugar": 585.0
+    },
+    "bundlePromoActive": true,
+    "revenue": 382.20000000000005,
+    "consecutiveDays": {
+      "melonpan": 0,
+      "shokupan": 1,
+      "anpan": 1
+    },
+    "minRatio": 0.6309523809523809,
+    "stockBefore": {
+      "redbean": 1450.0,
+      "cocoa": 0.0,
+      "flour": 6520.0,
+      "yeast": 526.0,
+      "butter": 795.0,
+      "egg": 21.0,
+      "milk": 1060.0,
+      "sugar": 900.0
+    },
+    "customerLog": [
+      {
+        "bundle": true,
+        "stalePool": "stale1",
+        "freshItem": "melonpan",
+        "staleItem": "shokupan"
+      },
+      {
+        "pool": "stale1",
+        "item": "anpan",
+        "qty": 1
+      },
+      {
+        "pool": "fresh",
+        "item": "shokupan",
+        "qty": 1
+      },
+      {
+        "pool": "fresh",
+        "item": "shokupan",
+        "qty": 2
+      },
+      {
+        "bundle": true,
+        "stalePool": "stale1",
+        "freshItem": "melonpan",
+        "staleItem": "anpan"
+      },
+      {
+        "pool": "fresh",
+        "item": "melonpan",
+        "qty": 3
+      },
+      {
+        "pool": "fresh",
+        "item": "anpan",
+        "qty": 1
+      },
+      {
+        "walkedAway": true
+      },
+      {
+        "walkedAway": true
+      },
+      {
+        "walkedAway": true
+      },
+      {
+        "walkedAway": true
+      },
+      {
+        "walkedAway": true
+      }
+    ],
+    "unitCost": {
+      "melonpan": 25.39166666666667,
+      "shokupan": 15.916666666666664,
+      "anpan": 20.475
+    },
+    "ovenElecCost": 6.3,
+    "totalCostWithWaste": 196.43333333333334,
+    "nearDepletion": {},
+    "discardedToday": {
+      "melonpan": 0.0,
+      "shokupan": 0.0,
+      "anpan": 0.0
+    },
+    "sold": {
+      "anpan": 3,
+      "melonpan": 5,
+      "shokupan": 4
+    },
+    "bundleSoldCount": 2,
+    "cashEnd": 34451.78666666678,
+    "eggWasteBaht": 1.2500000000000002,
+    "walkedAway": 5,
+    "staleSold": {
+      "fresh": {
+        "anpan": 1,
+        "melonpan": 5,
+        "shokupan": 3
+      },
+      "stale2": {
+        "anpan": 0,
+        "melonpan": 0,
+        "shokupan": 0
+      },
+      "stale1": {
+        "anpan": 2,
+        "melonpan": 0,
+        "shokupan": 1
+      }
+    },
+    "hypeItem": "melonpan",
+    "needed": {
+      "milk": 1680,
+      "flour": 1500,
+      "yeast": 56,
+      "butter": 480,
+      "redbean": 100,
+      "sugar": 530
+    },
+    "reorderCost": 292.8,
+    "day": 128,
+    "appealDecay": {
+      "melonpan": 1.0,
+      "shokupan": 0.97,
+      "anpan": 0.97
+    },
+    "cashStart": 34436.68666666679,
+    "waterElecBase": 50,
+    "custGen": {
+      "customers": 12,
+      "successes": 12,
+      "p": 0.35,
+      "rolls": [
+        37,
+        58,
+        13,
+        75,
+        33,
+        80,
+        58,
+        19,
+        29,
+        99,
+        94,
+        22,
+        30,
+        94,
+        36,
+        10,
+        7,
+        38,
+        59,
+        96,
+        31,
+        0,
+        62,
+        96,
+        55,
+        43,
+        24,
+        15,
+        54,
+        48
+      ],
+      "N": 30,
+      "seed": 38472
+    },
+    "rentCost": 0,
+    "refilled": {
+      "milk": 4880.0
+    }
   }
 ]
