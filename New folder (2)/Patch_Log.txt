@@ -937,3 +937,35 @@ Patch 6.6.2 (2026-08-14) — ตัดเพดาน (clamp) เทียมข
     `customerPoolN` คำนวณจากสูตรตรงๆ ไม่มี clamp คั่นแล้ว)
   - อัปเดต header เวอร์ชันบนสุดของ `Parallel Engine Core.ps1` เป็น 6.6.2
   - Layer ที่กระทบ: orchestrator (`Parallel Engine Core.ps1`) เท่านั้น
+
+─────────────────────────────────────
+Patch 6.7.0 (2026-08-14) — แก้บัค AutoProductionOrder มองไม่เห็นสต็อกเก่าค้าง
+─────────────────────────────────────
+  - ที่มา: ผู้เล่นสังเกตว่า Melonpan ค้างสต็อกสูงกว่าเมนูอื่นชัดเจนหลายวันติด
+    (Day133-137) ทั้งที่ก็ยังสั่งผลิตเพิ่ม/แช่ยอดสูงต่อเนื่อง ไอวิเคราะห์แล้ว
+    พบสาเหตุ 2 จุดใน `AutoProductionOrder()`: (1) ฟังก์ชันไม่เคยรู้จัก
+    `staleStock1`/`staleStock2` เลย มองแค่ producedLast/soldLast วันเดียว
+    (2) เงื่อนไข "sold >= produced" ไม่แยกว่าที่ขายเกินยอดผลิตเพราะของเก่า
+    ช่วยขาย หรือเพราะ demand ใหม่จริง — ผู้เล่นสั่งแก้ทั้ง 2 จุดพร้อมกัน
+  - `Layers\01_AutoProductionOrder.ps1`: เปลี่ยน signature รับ 2 พารามิเตอร์
+    ใหม่ `$oldStockSoldLastDay` (ของเก่าที่ขายได้เมื่อวาน แยกจากยอดขายรวม)
+    กับ `$currentLeftoverStock` (สต็อกเก่าที่ยังค้างอยู่จริง ณ ตอนตัดสินใจ) —
+    คำนวณ `freshSold = sold - oldStockSold` ใช้แทน `sold` ตรงๆ ในทุกเงื่อนไข
+    กันสัญญาณหลอกจากของเก่าช่วยขาย แล้วหัก `$leftover` ออกจากยอดที่คำนวณได้
+    ก่อนสรุปผลลัพธ์สุดท้าย — พ่วงปิดช่องโหว่ "dead zone" เดิมที่
+    sellThroughRate เท่ากับ 0.5/0.75 พอดีไม่เข้าเงื่อนไขไหนเลย (เปลี่ยน `<`
+    เป็น `<=` ทั้งสองจุด)
+  - `Parallel Engine Core.ps1`: เพิ่ม state ใหม่ `oldStockSoldLast` (เก็บ
+    `soldStale1+soldStale2` ต่อเมนูของแต่ละวัน) โหลด/เซฟคู่กับ field อื่น
+    (เซฟเก่าไม่มี field นี้ตั้ง 0 ทุกเมนู) — จุดเรียก `AutoProductionOrder()`
+    ส่ง `$currentLeftoverStock` เป็น `staleStock1+staleStock2` รวมกัน ณ
+    ตอนเรียก (ก่อนถูกอัปเดตท้ายลูปวันนั้น คือของเก่าที่ยังไม่ถูกแตะเลยวันนี้)
+  - ทดสอบก่อน merge: รัน Day 138 จริงผ่าน orchestrator ปกติ (ไม่มี error)
+    Melonpan ที่ค้างสต็อก 10 ชิ้นจาก Day137 ทำให้คำสั่งผลิต Day138 ลดฮวบเหลือ
+    แค่ 1 ชิ้น (จากเดิมสูตรเก่าจะสั่ง ~6-8 ชิ้นซ้อนทับของเก่าที่ยังขายไม่ออก)
+    ยืนยันว่าสูตรใหม่หักของเก่าออกจริงตามที่ตั้งใจ
+  - อัปเดต header เวอร์ชันบนสุดของ `Parallel Engine Core.ps1` เป็น 6.7.0
+  - Layer ที่กระทบ: `01_AutoProductionOrder.ps1` โดยตรง + orchestrator
+    (`Parallel Engine Core.ps1`, state ใหม่ + จุดเรียกฟังก์ชัน) — ไม่กระทบ
+    layer อื่นเลย (StockCheck/SalesLayer/ReorderLayer ฯลฯ ยังรับ
+    productionOrder ที่คำนวณเสร็จแล้วเหมือนเดิมทุกประการ)

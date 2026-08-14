@@ -1,4 +1,4 @@
-﻿# ===== Parallel Engine Core — Version: 6.6.2 =====
+﻿# ===== Parallel Engine Core — Version: 6.7.0 =====
 # ไฟล์นี้คือ orchestrator ตัวจริง (รันได้จริง) — เชื่อมไฟล์ layer ใน Layers\
 # เข้าด้วยกันตามลำดับ pipeline แล้วสั่งรัน ไม่ใช่ตัวคำนวณเอง (ตัวคำนวณอยู่ใน
 # แต่ละไฟล์ layer) Engine Noname.txt เป็น snapshot pseudocode เก่าไว้อ่าน
@@ -122,6 +122,15 @@ if (Test-Path $StatePath) {
   # (Patch Draft "N/p growth" ปลดล็อก 2026-08-14) — field ใหม่ ถ้าเซฟเก่าไม่มีให้ตั้งค่าเริ่มต้น
   $shopRating = if ($saved.PSObject.Properties.Name -contains "shopRating") { [double]$saved.shopRating } else { 50.0 }
   $consecutiveGoodDays = if ($saved.PSObject.Properties.Name -contains "consecutiveGoodDays") { [int]$saved.consecutiveGoodDays } else { 0 }
+  # (แก้บัค AutoProductionOrder มองไม่เห็นสต็อกเก่า 2026-08-14) — เก็บว่าเมื่อวาน
+  # ขายของเก่า (stale1+stale2) ไปเท่าไหร่ต่อเมนู ถ้าเซฟเก่าไม่มีให้ตั้ง 0 (สมมติ
+  # ไม่มีของเก่าช่วยขายเลยตอนย้ายเซฟเก่ามาใช้ ปลอดภัยกว่าเดา)
+  $oldStockSoldLast = @{}
+  if ($saved.PSObject.Properties.Name -contains "oldStockSoldLast") {
+    foreach ($p in $saved.oldStockSoldLast.PSObject.Properties) { $oldStockSoldLast[$p.Name] = [double]$p.Value }
+  } else {
+    foreach ($it in $items) { $oldStockSoldLast[$it] = 0 }
+  }
 } else {
   $stock = @{}
   foreach ($k2 in $stockMax.Keys) { $stock[$k2] = $stockMax[$k2] }
@@ -140,6 +149,8 @@ if (Test-Path $StatePath) {
   foreach ($it in $items) { $staleStock1[$it] = 0; $staleStock2[$it] = 0 }
   $shopRating = 50.0
   $consecutiveGoodDays = 0
+  $oldStockSoldLast = @{}
+  foreach ($it in $items) { $oldStockSoldLast[$it] = 0 }
 }
 
 # (Patch Draft "N/p growth" ปลดล็อก 2026-08-14, ตัด milestone ออก Patch 6.6.1,
@@ -172,7 +183,12 @@ for ($day = ($lastDay + 1); $day -le $TargetDay; $day++) {
   $cashStart = $cash
   $stockBeforeNorm = Normalize-Stock $stock
 
-  $productionOrder = AutoProductionOrder $prevOrder $producedLast $soldLast $items
+  # currentLeftoverStock = สต็อกเก่าที่ยังค้างอยู่จริง ณ ตอนตัดสินใจ (staleStock1+
+  # staleStock2 ก่อนถูกอัปเดตท้ายลูปวันนี้) ให้ AutoProductionOrder() หักออกจาก
+  # ยอดสั่งใหม่ ไม่ให้สั่งซ้อนทับของเก่าที่ขายไม่ออกอยู่แล้ว
+  $currentLeftoverStock = @{}
+  foreach ($it in $items) { $currentLeftoverStock[$it] = $staleStock1[$it] + $staleStock2[$it] }
+  $productionOrder = AutoProductionOrder $prevOrder $producedLast $soldLast $oldStockSoldLast $currentLeftoverStock $items
 
   $check = StockCheck $stock $productionOrder
   $prod = OutputProduction $check
@@ -333,6 +349,8 @@ for ($day = ($lastDay + 1); $day -le $TargetDay; $day++) {
   $prevOrder = $productionOrder
   $producedLast = $check.actualProduced
   $soldLast = $sales.sold
+  $oldStockSoldLast = @{}
+  foreach ($it in $items) { $oldStockSoldLast[$it] = $sales.soldStale1[$it] + $sales.soldStale2[$it] }
 }
 
 $dayReports | ConvertTo-Json -Depth 6 | Set-Content -Path $ReportPath -Encoding utf8
@@ -350,6 +368,6 @@ if (Test-Path $LogPath) {
 foreach ($r in $dayReports) { [void]$combinedLog.Add($r) }
 $combinedLog | ConvertTo-Json -Depth 6 | Set-Content -Path $LogPath -Encoding utf8
 
-$state = @{ stock=$stock; cash=$cash; history=$history; walkedAwayHistory=$walkedAwayHistory; lastDay=$TargetDay; prevOrder=$prevOrder; producedLast=$producedLast; soldLast=$soldLast; consecutiveDays=$consecutiveDays; staleStock1=$staleStock1; staleStock2=$staleStock2; shopRating=$shopRating; consecutiveGoodDays=$consecutiveGoodDays }
+$state = @{ stock=$stock; cash=$cash; history=$history; walkedAwayHistory=$walkedAwayHistory; lastDay=$TargetDay; prevOrder=$prevOrder; producedLast=$producedLast; soldLast=$soldLast; consecutiveDays=$consecutiveDays; staleStock1=$staleStock1; staleStock2=$staleStock2; shopRating=$shopRating; consecutiveGoodDays=$consecutiveGoodDays; oldStockSoldLast=$oldStockSoldLast }
 $state | ConvertTo-Json | Set-Content -Path $StatePath -Encoding utf8
 
