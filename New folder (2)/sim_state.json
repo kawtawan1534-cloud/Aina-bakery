@@ -1,10 +1,4 @@
 {
-  "lastDay": 134,
-  "soldLast": {
-    "shokupan": 6,
-    "anpan": 2,
-    "melonpan": 6
-  },
   "walkedAwayHistory": [
     0,
     0,
@@ -139,13 +133,41 @@
     3,
     1,
     1,
+    1,
     1
   ],
-  "producedLast": {
-    "shokupan": 6.0,
-    "anpan": 6.0,
-    "melonpan": 8.0
+  "prevOrder": {
+    "shokupan": 8,
+    "melonpan": 8,
+    "anpan": 5
   },
+  "producedLast": {
+    "shokupan": 3.0,
+    "melonpan": 3.0,
+    "anpan": 2.0
+  },
+  "stock": {
+    "butter": 1.2,
+    "egg": 28.0,
+    "redbean": 1.6,
+    "sugar": 0.875,
+    "milk": 4.18,
+    "cocoa": 0.0,
+    "yeast": 0.147,
+    "flour": 6.1
+  },
+  "soldLast": {
+    "shokupan": 3,
+    "melonpan": 7,
+    "anpan": 6
+  },
+  "cash": 34914.52666666679,
+  "staleStock2": {
+    "shokupan": 0.0,
+    "melonpan": 0.0,
+    "anpan": 0.0
+  },
+  "consecutiveGoodDays": 0,
   "history": [
     14,
     10,
@@ -280,39 +302,19 @@
     15,
     9,
     11,
+    11,
     11
   ],
-  "stock": {
-    "redbean": 1.7,
-    "flour": 6.81,
-    "butter": 0.24,
-    "yeast": 0.174,
-    "cocoa": 0.0,
-    "milk": 5.0,
-    "sugar": 1.11,
-    "egg": 30.0
-  },
   "staleStock1": {
-    "shokupan": 0.0,
-    "melonpan": 4.0,
-    "anpan": 4.0
-  },
-  "consecutiveGoodDays": 3,
-  "shopRating": 52,
-  "consecutiveDays": {
-    "anpan": 0,
-    "shokupan": 0,
-    "melonpan": 0
-  },
-  "prevOrder": {
-    "shokupan": 6,
-    "melonpan": 8,
-    "anpan": 6
-  },
-  "staleStock2": {
     "shokupan": 0.0,
     "melonpan": 0.0,
     "anpan": 0.0
   },
-  "cash": 34779.02666666679
+  "shopRating": 50,
+  "lastDay": 135,
+  "consecutiveDays": {
+    "shokupan": 0,
+    "melonpan": 1,
+    "anpan": 1
+  }
 }
