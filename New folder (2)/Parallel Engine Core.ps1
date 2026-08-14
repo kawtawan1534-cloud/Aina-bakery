@@ -1,4 +1,4 @@
-﻿# ===== Parallel Engine Core — Version: 6.6.1 =====
+﻿# ===== Parallel Engine Core — Version: 6.6.2 =====
 # ไฟล์นี้คือ orchestrator ตัวจริง (รันได้จริง) — เชื่อมไฟล์ layer ใน Layers\
 # เข้าด้วยกันตามลำดับ pipeline แล้วสั่งรัน ไม่ใช่ตัวคำนวณเอง (ตัวคำนวณอยู่ใน
 # แต่ละไฟล์ layer) Engine Noname.txt เป็น snapshot pseudocode เก่าไว้อ่าน
@@ -142,14 +142,17 @@ if (Test-Path $StatePath) {
   $consecutiveGoodDays = 0
 }
 
-# (Patch Draft "N/p growth" ปลดล็อก 2026-08-14, ตัด milestone ออก 2026-08-14
-# Patch 6.6.1) — N/p ไม่ใช่ค่าคงที่ตายตัวอีกต่อไป ทั้งคู่คำนวณจาก $shopRating
-# ล้วนๆ แบบต่อเนื่องทุกวัน (ไม่มีขั้นบันได/รายได้สะสม/flag ปลดล็อกค้างถาวร —
-# ผู้เล่นสั่ง: ชีวิตจริงไม่มี milestone) มี lag 1 วันเสมอ (ใช้ shopRating ของ
-# เมื่อวานตอนต้นลูป แล้วอัปเดตใหม่ท้ายลูป) เหมือน AutoProductionOrder() —
-# บั๊กวงจรแกว่งที่รู้อยู่แล้วยังไม่แก้ ดู Patch Draft.txt — คลัมป์ N ที่ 20-50
-# คน กันสุดโต่ง
-$customerPoolN = [Math]::Max(20, [Math]::Min(50, [Math]::Round(30 + (($shopRating - 50) * 0.4))))
+# (Patch Draft "N/p growth" ปลดล็อก 2026-08-14, ตัด milestone ออก Patch 6.6.1,
+# ตัดเพดาน N ออก Patch 6.6.2) — N/p ไม่ใช่ค่าคงที่ตายตัวอีกต่อไป ทั้งคู่
+# คำนวณจาก $shopRating ล้วนๆ แบบต่อเนื่องทุกวัน มี lag 1 วันเสมอ (ใช้
+# shopRating ของเมื่อวานตอนต้นลูป แล้วอัปเดตใหม่ท้ายลูป) เหมือน
+# AutoProductionOrder() — บั๊กวงจรแกว่งที่รู้อยู่แล้วยังไม่แก้ ดู Patch Draft.txt
+# N ไม่มี clamp เทียมของตัวเองอีกต่อไป (ผู้เล่นสั่ง: "ทำไมยังมีเพดาน" — ไม่ควร
+# มีเพดานลอยๆ ที่ไอใส่เพิ่มเอง) ตัวจำกัดตามธรรมชาติมีอยู่แล้วในตัวสูตร: shopRating
+# เองถูกคลัมป์ 0-100 อยู่แล้ว (บรรทัดคำนวณ shopRating ท้ายลูป) จึงทำให้ N ไหลอยู่
+# ในช่วง 10-50 คนโดยอัตโนมัติแค่จาก "ชื่อเสียงมีเพดานจริงของมันเอง" ไม่ใช่จาก
+# ไอไปจำกัด N ตรงๆ อีกชั้น
+$customerPoolN = [Math]::Round(30 + (($shopRating - 50) * 0.4))
 $customerVisitP = [Math]::Max(0.05, [Math]::Min(0.95, 0.35 + (($shopRating - 50) * 0.003) + ([Math]::Min(20, $consecutiveGoodDays * 0.5) * 0.005)))
 $walkAwayChance = 0.05
 # (Patch 6.5.1) เดิมสุ่มทั้งวันว่าเปิดโปร "ซื้อคู่คุ้มกว่า" มั้ย (10%/วัน) — เปลี่ยน
@@ -269,9 +272,10 @@ for ($day = ($lastDay + 1); $day -le $TargetDay; $day++) {
 
   $consecutiveGoodDays = if ($stockOutWalkAway -eq 0) { $consecutiveGoodDays + 1 } else { 0 }
 
-  # N ไม่มี milestone อีกต่อไป (ผู้เล่นสั่ง 2026-08-14) — ขยับต่อเนื่องตาม
-  # shopRating ล้วนๆ ทุกวัน เหมือน p ทุกประการ คลัมป์ 20-50 คน
-  $customerPoolN = [Math]::Max(20, [Math]::Min(50, [Math]::Round(30 + (($shopRating - 50) * 0.4))))
+  # N ไม่มี milestone และไม่มี clamp เทียมของตัวเองอีกต่อไป — ขยับต่อเนื่องตาม
+  # shopRating ล้วนๆ ทุกวัน เหมือน p ทุกประการ (ตัวจำกัดตามธรรมชาติมาจาก
+  # shopRating ที่คลัมป์ 0-100 อยู่แล้วด้านบน ไม่ใช่จาก N โดยตรง)
+  $customerPoolN = [Math]::Round(30 + (($shopRating - 50) * 0.4))
   $loyaltyPool = [Math]::Min(20, $consecutiveGoodDays * 0.5)
   $customerVisitP = [Math]::Max(0.05, [Math]::Min(0.95, 0.35 + (($shopRating - 50) * 0.003) + ($loyaltyPool * 0.005)))
 
