@@ -1,4 +1,4 @@
-﻿# ===== Parallel Engine Core — Version: 6.7.0 =====
+﻿# ===== Parallel Engine Core — Version: 6.6.3 =====
 # ไฟล์นี้คือ orchestrator ตัวจริง (รันได้จริง) — เชื่อมไฟล์ layer ใน Layers\
 # เข้าด้วยกันตามลำดับ pipeline แล้วสั่งรัน ไม่ใช่ตัวคำนวณเอง (ตัวคำนวณอยู่ใน
 # แต่ละไฟล์ layer) Engine Noname.txt เป็น snapshot pseudocode เก่าไว้อ่าน
