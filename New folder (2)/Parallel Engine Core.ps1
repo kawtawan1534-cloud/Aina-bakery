@@ -1,4 +1,4 @@
-﻿# ===== Parallel Engine Core — Version: 6.6.0 =====
+﻿# ===== Parallel Engine Core — Version: 6.6.1 =====
 # ไฟล์นี้คือ orchestrator ตัวจริง (รันได้จริง) — เชื่อมไฟล์ layer ใน Layers\
 # เข้าด้วยกันตามลำดับ pipeline แล้วสั่งรัน ไม่ใช่ตัวคำนวณเอง (ตัวคำนวณอยู่ใน
 # แต่ละไฟล์ layer) Engine Noname.txt เป็น snapshot pseudocode เก่าไว้อ่าน
@@ -122,12 +122,6 @@ if (Test-Path $StatePath) {
   # (Patch Draft "N/p growth" ปลดล็อก 2026-08-14) — field ใหม่ ถ้าเซฟเก่าไม่มีให้ตั้งค่าเริ่มต้น
   $shopRating = if ($saved.PSObject.Properties.Name -contains "shopRating") { [double]$saved.shopRating } else { 50.0 }
   $consecutiveGoodDays = if ($saved.PSObject.Properties.Name -contains "consecutiveGoodDays") { [int]$saved.consecutiveGoodDays } else { 0 }
-  $totalRevenueEarned = if ($saved.PSObject.Properties.Name -contains "totalRevenueEarned") { [double]$saved.totalRevenueEarned } else { 0.0 }
-  $customerPoolNSaved = if ($saved.PSObject.Properties.Name -contains "customerPoolN") { [int]$saved.customerPoolN } else { 30 }
-  $nMilestones = @{ rev100k = $false; rev300k = $false; ratingPenalty = $false }
-  if ($saved.PSObject.Properties.Name -contains "nMilestones") {
-    foreach ($p in $saved.nMilestones.PSObject.Properties) { $nMilestones[$p.Name] = [bool]$p.Value }
-  }
 } else {
   $stock = @{}
   foreach ($k2 in $stockMax.Keys) { $stock[$k2] = $stockMax[$k2] }
@@ -146,17 +140,16 @@ if (Test-Path $StatePath) {
   foreach ($it in $items) { $staleStock1[$it] = 0; $staleStock2[$it] = 0 }
   $shopRating = 50.0
   $consecutiveGoodDays = 0
-  $totalRevenueEarned = 0.0
-  $customerPoolNSaved = 30
-  $nMilestones = @{ rev100k = $false; rev300k = $false; ratingPenalty = $false }
 }
 
-# (Patch Draft "N/p growth" ปลดล็อก 2026-08-14) — N/p ตอนนี้ไม่ใช่ค่าคงที่ตายตัวอีก
-# ต่อไป: $customerPoolN เริ่มจากค่าที่เซฟไว้ (ขยับตาม milestone รายได้/ชื่อเสียง)
-# ส่วน $customerVisitP คำนวณจาก ratingBonus/loyaltyBonus ท้ายลูปของวันก่อนหน้า
-# (มี lag 1 วันเสมอ เหมือน AutoProductionOrder() — บั๊กวงจรแกว่งที่รู้อยู่แล้ว
-# ยังไม่แก้ ดู Patch Draft.txt)
-$customerPoolN = $customerPoolNSaved
+# (Patch Draft "N/p growth" ปลดล็อก 2026-08-14, ตัด milestone ออก 2026-08-14
+# Patch 6.6.1) — N/p ไม่ใช่ค่าคงที่ตายตัวอีกต่อไป ทั้งคู่คำนวณจาก $shopRating
+# ล้วนๆ แบบต่อเนื่องทุกวัน (ไม่มีขั้นบันได/รายได้สะสม/flag ปลดล็อกค้างถาวร —
+# ผู้เล่นสั่ง: ชีวิตจริงไม่มี milestone) มี lag 1 วันเสมอ (ใช้ shopRating ของ
+# เมื่อวานตอนต้นลูป แล้วอัปเดตใหม่ท้ายลูป) เหมือน AutoProductionOrder() —
+# บั๊กวงจรแกว่งที่รู้อยู่แล้วยังไม่แก้ ดู Patch Draft.txt — คลัมป์ N ที่ 20-50
+# คน กันสุดโต่ง
+$customerPoolN = [Math]::Max(20, [Math]::Min(50, [Math]::Round(30 + (($shopRating - 50) * 0.4))))
 $customerVisitP = [Math]::Max(0.05, [Math]::Min(0.95, 0.35 + (($shopRating - 50) * 0.003) + ([Math]::Min(20, $consecutiveGoodDays * 0.5) * 0.005)))
 $walkAwayChance = 0.05
 # (Patch 6.5.1) เดิมสุ่มทั้งวันว่าเปิดโปร "ซื้อคู่คุ้มกว่า" มั้ย (10%/วัน) — เปลี่ยน
@@ -275,13 +268,10 @@ for ($day = ($lastDay + 1); $day -le $TargetDay; $day++) {
   $shopRating = [Math]::Max(0, [Math]::Min(100, $shopRating))
 
   $consecutiveGoodDays = if ($stockOutWalkAway -eq 0) { $consecutiveGoodDays + 1 } else { 0 }
-  $totalRevenueEarned += $sales.revenue
 
-  if (-not $nMilestones.rev100k -and $totalRevenueEarned -ge 100000) { $customerPoolN += 5; $nMilestones.rev100k = $true }
-  if (-not $nMilestones.rev300k -and $totalRevenueEarned -ge 300000) { $customerPoolN += 10; $nMilestones.rev300k = $true }
-  if (-not $nMilestones.ratingPenalty -and $shopRating -lt 20) { $customerPoolN = [Math]::Max(30, $customerPoolN - 5); $nMilestones.ratingPenalty = $true }
-  if ($nMilestones.ratingPenalty -and $shopRating -gt 30) { $nMilestones.ratingPenalty = $false } # เผื่อโดนโทษซ้ำได้ถ้ารีวิวแย่ลงอีกรอบ
-
+  # N ไม่มี milestone อีกต่อไป (ผู้เล่นสั่ง 2026-08-14) — ขยับต่อเนื่องตาม
+  # shopRating ล้วนๆ ทุกวัน เหมือน p ทุกประการ คลัมป์ 20-50 คน
+  $customerPoolN = [Math]::Max(20, [Math]::Min(50, [Math]::Round(30 + (($shopRating - 50) * 0.4))))
   $loyaltyPool = [Math]::Min(20, $consecutiveGoodDays * 0.5)
   $customerVisitP = [Math]::Max(0.05, [Math]::Min(0.95, 0.35 + (($shopRating - 50) * 0.003) + ($loyaltyPool * 0.005)))
 
@@ -331,8 +321,6 @@ for ($day = ($lastDay + 1); $day -le $TargetDay; $day++) {
     consecutiveGoodDays = $consecutiveGoodDays
     customerPoolN = $customerPoolN
     customerVisitP = $customerVisitP
-    totalRevenueEarned = $totalRevenueEarned
-    nMilestones = $nMilestones
   }
   $dayReports += $report
 
@@ -358,6 +346,6 @@ if (Test-Path $LogPath) {
 foreach ($r in $dayReports) { [void]$combinedLog.Add($r) }
 $combinedLog | ConvertTo-Json -Depth 6 | Set-Content -Path $LogPath -Encoding utf8
 
-$state = @{ stock=$stock; cash=$cash; history=$history; walkedAwayHistory=$walkedAwayHistory; lastDay=$TargetDay; prevOrder=$prevOrder; producedLast=$producedLast; soldLast=$soldLast; consecutiveDays=$consecutiveDays; staleStock1=$staleStock1; staleStock2=$staleStock2; shopRating=$shopRating; consecutiveGoodDays=$consecutiveGoodDays; totalRevenueEarned=$totalRevenueEarned; customerPoolN=$customerPoolN; nMilestones=$nMilestones }
+$state = @{ stock=$stock; cash=$cash; history=$history; walkedAwayHistory=$walkedAwayHistory; lastDay=$TargetDay; prevOrder=$prevOrder; producedLast=$producedLast; soldLast=$soldLast; consecutiveDays=$consecutiveDays; staleStock1=$staleStock1; staleStock2=$staleStock2; shopRating=$shopRating; consecutiveGoodDays=$consecutiveGoodDays }
 $state | ConvertTo-Json | Set-Content -Path $StatePath -Encoding utf8
 
