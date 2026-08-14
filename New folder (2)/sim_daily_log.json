@@ -16333,5 +16333,234 @@
     "cashStart": 34589.44666666679,
     "totalCostWithWaste": 335.35,
     "packagingCost": 25.5
+  },
+  {
+    "ovenElecCost": 14.0,
+    "bundlePromoActive": true,
+    "discardedToday": {
+      "shokupan": 0.0,
+      "melonpan": 1.0,
+      "anpan": 0.0
+    },
+    "custGen": {
+      "successes": 11,
+      "p": 0.358,
+      "rolls": [
+        38,
+        16,
+        79,
+        5,
+        63,
+        27,
+        14,
+        59,
+        88,
+        33,
+        61,
+        44,
+        72,
+        23,
+        1,
+        94,
+        95,
+        60,
+        56,
+        80,
+        67,
+        17,
+        47,
+        27,
+        82,
+        48,
+        68,
+        81,
+        35,
+        22
+      ],
+      "seed": 1622,
+      "customers": 11,
+      "N": 30
+    },
+    "eggWasteBaht": 2.0833333333333335,
+    "customerLog": [
+      {
+        "pool": "fresh",
+        "qty": 1,
+        "item": "anpan"
+      },
+      {
+        "bundle": true,
+        "freshItem": "shokupan",
+        "staleItem": "melonpan",
+        "stalePool": "stale1"
+      },
+      {
+        "pool": "fresh",
+        "qty": 1,
+        "item": "shokupan"
+      },
+      {
+        "pool": "fresh",
+        "qty": 2,
+        "item": "shokupan"
+      },
+      {
+        "walkedAway": true
+      },
+      {
+        "pool": "fresh",
+        "qty": 3,
+        "item": "melonpan"
+      },
+      {
+        "pool": "fresh",
+        "qty": 1,
+        "item": "shokupan"
+      },
+      {
+        "pool": "fresh",
+        "qty": 1,
+        "item": "shokupan"
+      },
+      {
+        "pool": "fresh",
+        "qty": 1,
+        "item": "melonpan"
+      },
+      {
+        "pool": "stale2",
+        "qty": 1,
+        "item": "melonpan"
+      },
+      {
+        "pool": "fresh",
+        "qty": 1,
+        "item": "anpan"
+      }
+    ],
+    "rentCost": 0,
+    "customerPoolN": 31.0,
+    "cashEnd": 34779.02666666679,
+    "needed": {
+      "redbean": 300,
+      "flour": 1780,
+      "butter": 540,
+      "yeast": 68,
+      "milk": 2000,
+      "sugar": 610
+    },
+    "walkAwayChanceHits": 1,
+    "loyaltyPool": 2,
+    "actualProduced": {
+      "shokupan": 6.0,
+      "anpan": 6.0,
+      "melonpan": 8.0
+    },
+    "productionOrder": {
+      "shokupan": 6,
+      "melonpan": 8,
+      "anpan": 6
+    },
+    "revenue": 454.86,
+    "consecutiveDays": {
+      "anpan": 0,
+      "shokupan": 0,
+      "melonpan": 0
+    },
+    "customers": 11,
+    "refilled": {
+      "milk": 5000.0
+    },
+    "customerVisitP": 0.366,
+    "discardWasteBaht": 25.39166666666667,
+    "unitCost": {
+      "shokupan": 15.916666666666664,
+      "melonpan": 25.39166666666667,
+      "anpan": 20.475
+    },
+    "refilledCost": {
+      "milk": 300.0
+    },
+    "stockBefore": {
+      "redbean": 2000.0,
+      "flour": 8590.0,
+      "butter": 780.0,
+      "yeast": 242.0,
+      "cocoa": 0.0,
+      "milk": 2000.0,
+      "sugar": 1720.0,
+      "egg": 34.0
+    },
+    "day": 134,
+    "bundleSoldCount": 1,
+    "reorderCost": 300.0,
+    "appealDecay": {
+      "shokupan": 1.0,
+      "melonpan": 1.0,
+      "anpan": 1.0
+    },
+    "stockAfterProduction": {
+      "redbean": 1700.0,
+      "flour": 6810.0,
+      "butter": 240.0,
+      "yeast": 174.0,
+      "cocoa": 0.0,
+      "milk": 0.0,
+      "sugar": 1110.0,
+      "egg": 30.0
+    },
+    "minRatio": 1.0,
+    "nearDepletion": {
+      "butter": 240.0
+    },
+    "threshold": {
+      "redbean": 600.0,
+      "flour": 1000.0,
+      "butter": 180.0,
+      "yeast": 100.0,
+      "cocoa": 0.0,
+      "milk": 750.0,
+      "sugar": 350.0,
+      "egg": 6.0
+    },
+    "shopRating": 52,
+    "packagingCost": 21.0,
+    "totalCostWithWaste": 423.56666666666666,
+    "ratios": {
+      "redbean": 6.666666666666667,
+      "flour": 4.825842696629214,
+      "butter": 1.4444444444444444,
+      "yeast": 3.5588235294117645,
+      "milk": 1.0,
+      "sugar": 2.819672131147541
+    },
+    "staleSold": {
+      "stale1": {
+        "shokupan": 0,
+        "anpan": 0,
+        "melonpan": 1
+      },
+      "fresh": {
+        "shokupan": 6,
+        "anpan": 2,
+        "melonpan": 4
+      },
+      "stale2": {
+        "shokupan": 0,
+        "anpan": 0,
+        "melonpan": 1
+      }
+    },
+    "consecutiveGoodDays": 3,
+    "walkedAway": 1,
+    "hypeItem": "shokupan",
+    "sold": {
+      "shokupan": 6,
+      "anpan": 2,
+      "melonpan": 6
+    },
+    "cashStart": 34709.16666666679,
+    "waterElecBase": 50,
+    "opExpenseCost": 85.0
   }
 ]
