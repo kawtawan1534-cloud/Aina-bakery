@@ -1,33 +1,43 @@
 {
-  "shopRating": 35.02168058653159,
-  "lastDay": 160,
-  "producedHist": {
-    "shokupan": [
-      2.0,
-      2.0,
-      3.0
-    ],
+  "stock": {
+    "cocoa": 0.0,
+    "egg": 13.0,
+    "milk": 5.0,
+    "sugar": 1.48,
+    "yeast": 0.35,
+    "flour": 6.31,
+    "redbean": 1.85,
+    "butter": 0.555
+  },
+  "producedLast": {
+    "melonpan": 4.0,
+    "shokupan": 3.0,
+    "anpan": 2.0
+  },
+  "oldStockSoldHist": {
     "melonpan": [
-      2.0,
-      3.0,
-      3.0
+      0.0,
+      0.0,
+      0
+    ],
+    "shokupan": [
+      0.0,
+      0.0,
+      0
     ],
     "anpan": [
-      2.0,
-      2.0,
-      1.0
+      0.0,
+      1.0,
+      0
     ]
   },
-  "consecutiveDays": {
-    "shokupan": 0,
-    "melonpan": 0,
-    "anpan": 1
+  "consecutiveGoodDays": 1,
+  "staleStock1": {
+    "melonpan": 2.0,
+    "shokupan": 0.0,
+    "anpan": 0.0
   },
-  "soldLast": {
-    "shokupan": 3,
-    "melonpan": 3,
-    "anpan": 2
-  },
+  "cash": 32140.156666666804,
   "history": [
     14,
     10,
@@ -188,48 +198,43 @@
     6,
     7,
     6,
-    8
+    8,
+    6
   ],
-  "cash": 32256.556666666802,
-  "oldStockSoldHist": {
-    "shokupan": [
-      0.0,
-      0.0,
-      0
-    ],
+  "consecutiveDays": {
+    "melonpan": 0,
+    "shokupan": 0,
+    "anpan": 0
+  },
+  "producedHist": {
     "melonpan": [
-      0.0,
-      0.0,
-      0
+      3.0,
+      3.0,
+      4.0
+    ],
+    "shokupan": [
+      2.0,
+      3.0,
+      3.0
     ],
     "anpan": [
-      0.0,
-      0.0,
-      1
+      2.0,
+      1.0,
+      2.0
     ]
   },
-  "staleStock1": {
-    "shokupan": 0.0,
-    "melonpan": 0.0,
-    "anpan": 0.0
+  "prevOrder": {
+    "melonpan": 4,
+    "shokupan": 3,
+    "anpan": 2
   },
-  "stock": {
-    "redbean": 1.95,
-    "cocoa": 0.0,
-    "yeast": 0.381,
-    "flour": 7.13,
-    "egg": 15.0,
-    "butter": 0.81,
-    "sugar": 1.765,
-    "milk": 1.16
-  },
-  "soldHist": {
-    "shokupan": [
-      2.0,
-      2.0,
-      3
-    ],
+  "orderedHist": {
     "melonpan": [
+      3.0,
+      3.0,
+      4
+    ],
+    "shokupan": [
       2.0,
       3.0,
       3
@@ -240,39 +245,6 @@
       2
     ]
   },
-  "prevOrder": {
-    "shokupan": 3,
-    "melonpan": 3,
-    "anpan": 1
-  },
-  "staleStock2": {
-    "shokupan": 0.0,
-    "melonpan": 0.0,
-    "anpan": 0.0
-  },
-  "orderedHist": {
-    "shokupan": [
-      2.0,
-      2.0,
-      3
-    ],
-    "melonpan": [
-      2.0,
-      3.0,
-      3
-    ],
-    "anpan": [
-      2.0,
-      2.0,
-      1
-    ]
-  },
-  "producedLast": {
-    "shokupan": 3.0,
-    "melonpan": 3.0,
-    "anpan": 1.0
-  },
-  "consecutiveGoodDays": 0,
   "walkedAwayHistory": [
     0,
     0,
@@ -433,11 +405,41 @@
     2,
     1,
     0,
+    1,
     1
   ],
+  "soldLast": {
+    "melonpan": 2,
+    "shokupan": 3,
+    "anpan": 2
+  },
+  "shopRating": 37.67059655720501,
+  "staleStock2": {
+    "melonpan": 0.0,
+    "shokupan": 0.0,
+    "anpan": 0.0
+  },
+  "soldHist": {
+    "melonpan": [
+      3.0,
+      3.0,
+      2
+    ],
+    "shokupan": [
+      2.0,
+      3.0,
+      3
+    ],
+    "anpan": [
+      1.0,
+      2.0,
+      2
+    ]
+  },
   "oldStockSoldLast": {
-    "shokupan": 0,
     "melonpan": 0,
-    "anpan": 1
-  }
+    "shokupan": 0,
+    "anpan": 0
+  },
+  "lastDay": 161
 }
