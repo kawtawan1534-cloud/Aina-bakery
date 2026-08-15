@@ -11,11 +11,13 @@
 function SalesLayer($customers, $availableStock, $staleStock1, $staleStock2, $hypeItem, $appealDecay, $walkAwayChance, $bundlePromoActive) {
   $stalePriceMult = @{ fresh = 1.0; stale1 = 0.8; stale2 = 0.75 }
   $bundleExtraDiscount = 0.9   # ซื้อคู่คุ้มกว่า: ลดเพิ่มอีก 10% จากราคารวมที่ลดแล้ว
-  $bundleAttemptChance = 0.2   # (Patch 6.5.1) โอกาสที่ลูกค้าแต่ละคนสนใจซื้อคู่
-                               # จริงๆ — เดิมคือ 0.5 แต่ตอนนั้นยังมีเงื่อนไข
-                               # "ต้องเป็นวันที่โปรเปิด" (10%/วัน) มาคูณซ้ำอีกชั้น
-                               # ทำให้อัตราเฉลี่ยจริงต่ำกว่านี้มาก ตอนนี้โปรเปิด
-                               # ทุกวันแล้ว จึงลดค่านี้ลงให้ยังสมเหตุสมผล
+  # (โปรผูกกับความคุ้มค่าจริง 2026-08-14 — ผู้เล่นสั่ง ยังไม่รัน/ยังไม่ทดสอบ)
+  # เดิม $bundleAttemptChance คงที่ 0.2 ทุกวันไม่ว่าโปรจะคุ้มแค่ไหน — เปลี่ยน
+  # เป็นคำนวณสดจากคู่ของสด/ของเก่าที่สุ่มได้จริงต่อลูกค้าแต่ละคนแทน: ยิ่งลด
+  # ราคาเยอะ (savingsPct สูง) ยิ่งมีโอกาสลองซื้อคู่มากขึ้น — พื้นฐาน 0.10 +
+  # savingsPct×0.5 (คลัมป์ 0.05-0.7 กันสุดโต่งทั้งสองด้าน)
+  $bundleAttemptBase = 0.10
+  $bundleAttemptSavingsWeight = 0.5
 
   $sold = @{}
   $soldFresh = @{}
@@ -67,12 +69,21 @@ function SalesLayer($customers, $availableStock, $staleStock1, $staleStock2, $hy
     $pools = @($freshPools + $stalePools)
     if ($pools.Count -eq 0) { $walkedAway++; $customerLog += @{ walkedAway = $true }; continue }
 
-    $tryBundle = $bundlePromoActive -and $freshPools.Count -gt 0 -and $stalePools.Count -gt 0 -and ((Get-Random -Minimum 0.0 -Maximum 1.0) -lt $bundleAttemptChance)
-
-    if ($tryBundle) {
+    $bundleCandidateOk = $bundlePromoActive -and $freshPools.Count -gt 0 -and $stalePools.Count -gt 0
+    $tryBundle = $false
+    if ($bundleCandidateOk) {
+      # เลือกคู่ที่จะเสนอให้ลูกค้าคนนี้ก่อน แล้วค่อยคำนวณว่าคุ้มพอจะลองไหม
+      # (ต้องรู้ว่าคู่ไหนก่อน ถึงจะคำนวณ savingsPct ของคู่นั้นได้จริง)
       $freshChoice = Pick-WeightedPool $freshPools
       $staleChoice = Pick-WeightedPool $stalePools
+      $normalPrice = $prices[$freshChoice.item] + $prices[$staleChoice.item] # ราคาเต็มถ้าซื้อทั้งคู่แยกกันไม่มีส่วนลดใดๆ
+      $candidateBundlePrice = ($prices[$freshChoice.item] * $stalePriceMult.fresh + $prices[$staleChoice.item] * $stalePriceMult[$staleChoice.pool]) * $bundleExtraDiscount
+      $savingsPct = 1 - ($candidateBundlePrice / $normalPrice)
+      $bundleAttemptChance = [Math]::Max(0.05, [Math]::Min(0.7, $bundleAttemptBase + ($savingsPct * $bundleAttemptSavingsWeight)))
+      $tryBundle = (Get-Random -Minimum 0.0 -Maximum 1.0) -lt $bundleAttemptChance
+    }
 
+    if ($tryBundle) {
       $availableStock[$freshChoice.item] -= 1
       $sold[$freshChoice.item] += 1
       $soldFresh[$freshChoice.item] += 1

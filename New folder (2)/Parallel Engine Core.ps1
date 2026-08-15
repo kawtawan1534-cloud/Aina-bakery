@@ -1,4 +1,4 @@
-﻿# ===== Parallel Engine Core — Version: 6.7.2 =====
+﻿# ===== Parallel Engine Core — Version: 6.8.0 =====
 # ไฟล์นี้คือ orchestrator ตัวจริง (รันได้จริง) — เชื่อมไฟล์ layer ใน Layers\
 # เข้าด้วยกันตามลำดับ pipeline แล้วสั่งรัน ไม่ใช่ตัวคำนวณเอง (ตัวคำนวณอยู่ใน
 # แต่ละไฟล์ layer) Engine Noname.txt เป็น snapshot pseudocode เก่าไว้อ่าน
@@ -242,7 +242,18 @@ for ($day = ($lastDay + 1); $day -le $TargetDay; $day++) {
   }
   $stock.egg -= $check.eggActual
 
-  $custGen = GenerateDailyCustomers $customerPoolN $customerVisitP
+  # (โปรดึงลูกค้าเข้าร้าน 2026-08-14 — ผู้เล่นสั่ง ยังไม่รัน/ยังไม่ทดสอบ) ถ้า
+  # วันนี้มีทั้งของสด+ของเก่าค้าง (เข้าเงื่อนไขโปรซื้อคู่คุ้มกว่าได้จริง) ให้บวก
+  # p bonus เล็กน้อยก่อนสุ่มลูกค้า — คนที่ปกติอาจไม่แวะ เห็นว่ามีโปรน่าจะคุ้ม
+  # เลยตัดสินใจเข้ามาดู (แค่เพิ่มโอกาส "แวะร้าน" เท่านั้น ไม่ได้การันตีว่าจะ
+  # ซื้อโปรจริง — ชั้นตัดสินใจซื้อจริงอยู่ใน SalesLayer แยกอิสระกัน)
+  $hasFreshToday = (($check.actualProduced.Values | Measure-Object -Sum).Sum) -gt 0
+  $hasStaleToday = ((($staleStock1.Values | Measure-Object -Sum).Sum) + (($staleStock2.Values | Measure-Object -Sum).Sum)) -gt 0
+  $promoAvailableToday = $hasFreshToday -and $hasStaleToday
+  $promoPBonus = if ($promoAvailableToday) { 0.03 } else { 0.0 }
+  $customerVisitPToday = [Math]::Max(0.05, [Math]::Min(0.95, $customerVisitP + $promoPBonus))
+
+  $custGen = GenerateDailyCustomers $customerPoolN $customerVisitPToday
   $customers = $custGen.customers
   $history += $customers # เก็บไว้แค่ดูเทรนด์ย้อนหลังในรายงาน ไม่ป้อนกลับเข้าสูตรคำนวณอีกต่อไป
 
@@ -372,6 +383,8 @@ for ($day = ($lastDay + 1); $day -le $TargetDay; $day++) {
     customerLog = $sales.customerLog
     staleSold = @{ fresh=$sales.soldFresh; stale1=$sales.soldStale1; stale2=$sales.soldStale2 }
     bundlePromoActive = $bundlePromoActive
+    promoAvailableToday = $promoAvailableToday
+    promoPBonus = $promoPBonus
     bundleSoldCount = $sales.bundleSoldCount
     discardedToday = $discardedToday
     discardWasteBaht = $discardWasteBaht
