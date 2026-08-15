@@ -1,4 +1,4 @@
-﻿# ===== Parallel Engine Core — Version: 6.6.3 =====
+﻿# ===== Parallel Engine Core — Version: 6.6.4 =====
 # ไฟล์นี้คือ orchestrator ตัวจริง (รันได้จริง) — เชื่อมไฟล์ layer ใน Layers\
 # เข้าด้วยกันตามลำดับ pipeline แล้วสั่งรัน ไม่ใช่ตัวคำนวณเอง (ตัวคำนวณอยู่ใน
 # แต่ละไฟล์ layer) Engine Noname.txt เป็น snapshot pseudocode เก่าไว้อ่าน
@@ -281,10 +281,29 @@ for ($day = ($lastDay + 1); $day -le $TargetDay; $day++) {
   $freshSoldToday = 0
   foreach ($it in $items) { $freshSoldToday += $sales.soldFresh[$it] }
   $freshRatio = if ($totalSoldToday -gt 0) { $freshSoldToday / $totalSoldToday } else { 0.5 }
-  $satisfactionDelta = (($freshRatio - 0.5) * 4) - ($stockOutWalkAway * 2)
+
+  # (แก้ 2026-08-14 — ผู้เล่นสั่ง) เดิมคนที่เดินหนีเพราะของหมดทุกคนโดนตัดคะแนน
+  # เท่ากันหมด (-2 คงที่/คน) ไม่สมจริง เปลี่ยนเป็นสุ่ม "นิสัย" ทีละคนแทน — บาง
+  # คนช่างมัน (ไม่ลด), บางคนปกติ (-2), บางคนหัวร้อน (-4) — สัดส่วน 30/40/30
+  # เลือกไว้ให้ค่าเฉลี่ยระยะยาวเท่าเดิม (0.3×0 + 0.4×2 + 0.3×4 = 2.0/คน) แต่
+  # รายวันจะแกว่งได้ตามนิสัยลูกค้าที่สุ่มมาจริง ไม่ใช่ตัวเลขนิ่งตายตัวอีกต่อไป
+  $angerPenalty = 0
+  $chillCount = 0; $normalCount = 0; $angryCount = 0
+  for ($i = 0; $i -lt $stockOutWalkAway; $i++) {
+    $mood = Get-Random -Minimum 0 -Maximum 100
+    if ($mood -lt 30) { $chillCount++ }             # "ช่างมัน ไม่เป็นไร ครั้งหน้าค่อยมาใหม่"
+    elseif ($mood -lt 70) { $angerPenalty += 2; $normalCount++ } # ปกติ
+    else { $angerPenalty += 4; $angryCount++ }       # หัวร้อน
+  }
+
+  $satisfactionDelta = (($freshRatio - 0.5) * 4) - $angerPenalty
   $shopRating = $shopRating + $satisfactionDelta
   $shopRating = $shopRating + ((50 - $shopRating) * 0.05) # mean reversion เบาๆ กลับเข้าใกล้ 50
-  $shopRating = [Math]::Max(0, [Math]::Min(100, $shopRating))
+  # (แก้บั๊ก 2026-08-14 — ผู้เล่นสั่ง) เดิมใช้ [Math]::Max(0, [Math]::Min(100, ...))
+  # ด้วยเลข Int32 ทำให้ PowerShell เลือก overload ผิดแล้วปัดทศนิยมทิ้งทุกวันโดย
+  # ไม่ตั้งใจ (mean reversion แทบไม่มีผลจริงเพราะโดนปัดก่อนสะสม) เปลี่ยนเป็น
+  # 0.0/100.0 ให้ชัดเจนว่าต้องเป็น double
+  $shopRating = [Math]::Max(0.0, [Math]::Min(100.0, $shopRating))
 
   $consecutiveGoodDays = if ($stockOutWalkAway -eq 0) { $consecutiveGoodDays + 1 } else { 0 }
 
@@ -341,6 +360,7 @@ for ($day = ($lastDay + 1); $day -le $TargetDay; $day++) {
     consecutiveGoodDays = $consecutiveGoodDays
     customerPoolN = $customerPoolN
     customerVisitP = $customerVisitP
+    walkAwayMood = @{ chill = $chillCount; normal = $normalCount; angry = $angryCount }
   }
   $dayReports += $report
 
