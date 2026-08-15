@@ -1,4 +1,4 @@
-﻿# ===== Parallel Engine Core — Version: 6.7.0 =====
+﻿# ===== Parallel Engine Core — Version: 6.7.1 =====
 # ไฟล์นี้คือ orchestrator ตัวจริง (รันได้จริง) — เชื่อมไฟล์ layer ใน Layers\
 # เข้าด้วยกันตามลำดับ pipeline แล้วสั่งรัน ไม่ใช่ตัวคำนวณเอง (ตัวคำนวณอยู่ใน
 # แต่ละไฟล์ layer) Engine Noname.txt เป็น snapshot pseudocode เก่าไว้อ่าน
@@ -137,11 +137,17 @@ if (Test-Path $StatePath) {
   # เฉลี่ยแทน ลดความอ่อนไหวต่อวันเดียวโดยไม่ต้องแอบดูอนาคต (ใช้แค่ข้อมูลจริงที่
   # เกิดขึ้นแล้ว) — เซฟเก่าไม่มี field พวกนี้ให้เริ่มจาก array ว่าง (ตกกลับไปใช้
   # ค่าวันเดียวเหมือนเดิมจนกว่าจะสะสมประวัติครบ)
-  $producedHist = @{}; $soldHist = @{}; $oldStockSoldHist = @{}
+  $producedHist = @{}; $soldHist = @{}; $oldStockSoldHist = @{}; $orderedHist = @{}
   foreach ($it in $items) {
     $producedHist[$it] = if ($saved.PSObject.Properties.Name -contains "producedHist" -and $saved.producedHist.PSObject.Properties.Name -contains $it) { @($saved.producedHist.$it | ForEach-Object { [double]$_ }) } else { @() }
     $soldHist[$it] = if ($saved.PSObject.Properties.Name -contains "soldHist" -and $saved.soldHist.PSObject.Properties.Name -contains $it) { @($saved.soldHist.$it | ForEach-Object { [double]$_ }) } else { @() }
     $oldStockSoldHist[$it] = if ($saved.PSObject.Properties.Name -contains "oldStockSoldHist" -and $saved.oldStockSoldHist.PSObject.Properties.Name -contains $it) { @($saved.oldStockSoldHist.$it | ForEach-Object { [double]$_ }) } else { @() }
+    # (แก้บัค "ยอดสั่งค้าง" 2026-08-14 — ผู้เล่นสั่งด่วน) เดิมเฉลี่ยแค่
+    # produced/sold แต่ยังเทียบกับ $ordered ของเมื่อวานวันเดียว (คนละไทม์เฟรม
+    # กัน) ทำให้เงื่อนไข "โต" ไม่ผ่านง่ายๆ แล้วค้างที่ยอดต่ำสุดไม่ขยับ (Day149
+    # ค้างที่ 1/1/1 ทั้งที่ของหมดเกลี้ยง 2 วันติด) — เก็บประวัติยอดสั่งย้อนหลัง
+    # 3 วันด้วย ให้ทุกตัวอยู่บนไทม์เฟรมเดียวกันหมด
+    $orderedHist[$it] = if ($saved.PSObject.Properties.Name -contains "orderedHist" -and $saved.orderedHist.PSObject.Properties.Name -contains $it) { @($saved.orderedHist.$it | ForEach-Object { [double]$_ }) } else { @() }
   }
 } else {
   $stock = @{}
@@ -163,8 +169,8 @@ if (Test-Path $StatePath) {
   $consecutiveGoodDays = 0
   $oldStockSoldLast = @{}
   foreach ($it in $items) { $oldStockSoldLast[$it] = 0 }
-  $producedHist = @{}; $soldHist = @{}; $oldStockSoldHist = @{}
-  foreach ($it in $items) { $producedHist[$it] = @(); $soldHist[$it] = @(); $oldStockSoldHist[$it] = @() }
+  $producedHist = @{}; $soldHist = @{}; $oldStockSoldHist = @{}; $orderedHist = @{}
+  foreach ($it in $items) { $producedHist[$it] = @(); $soldHist[$it] = @(); $oldStockSoldHist[$it] = @(); $orderedHist[$it] = @() }
 }
 
 # (Patch Draft "N/p growth" ปลดล็อก 2026-08-14, ตัด milestone ออก Patch 6.6.1,
@@ -206,13 +212,18 @@ for ($day = ($lastDay + 1); $day -le $TargetDay; $day++) {
   # เฉลี่ยประวัติย้อนหลังสูงสุด 3 วัน แทนใช้แค่เมื่อวานวันเดียว (ลดความอ่อนไหว
   # ต่อวันผิดปกติเดี่ยวๆ) — ถ้ายังไม่มีประวัติสะสม (เกมใหม่/เพิ่ง merge patch)
   # ตกกลับไปใช้ค่าวันเดียวล่าสุดเหมือนเดิมโดยอัตโนมัติ
-  $avgProduced = @{}; $avgSold = @{}; $avgOldStockSold = @{}
+  # (แก้บัค "ยอดสั่งค้าง" 2026-08-14) — เฉลี่ย $ordered (ยอดสั่งย้อนหลัง) ด้วย
+  # เหมือนกัน ไม่ใช่แค่ produced/sold ไม่งั้นเทียบกันคนละไทม์เฟรม (ค่าเฉลี่ย
+  # หลายวัน vs ค่าเดี่ยวเมื่อวาน) ทำให้เงื่อนไข "โต" ไม่ผ่านง่ายๆ แล้วค้างที่
+  # ยอดต่ำสุดไม่ขยับ — ตอนนี้ทั้ง ordered/produced/sold อยู่บนไทม์เฟรมเดียวกัน
+  $avgOrdered = @{}; $avgProduced = @{}; $avgSold = @{}; $avgOldStockSold = @{}
   foreach ($it in $items) {
+    $avgOrdered[$it] = if ($orderedHist[$it].Count -gt 0) { ($orderedHist[$it] | Measure-Object -Average).Average } else { $prevOrder[$it] }
     $avgProduced[$it] = if ($producedHist[$it].Count -gt 0) { ($producedHist[$it] | Measure-Object -Average).Average } else { $producedLast[$it] }
     $avgSold[$it] = if ($soldHist[$it].Count -gt 0) { ($soldHist[$it] | Measure-Object -Average).Average } else { $soldLast[$it] }
     $avgOldStockSold[$it] = if ($oldStockSoldHist[$it].Count -gt 0) { ($oldStockSoldHist[$it] | Measure-Object -Average).Average } else { $oldStockSoldLast[$it] }
   }
-  $productionOrder = AutoProductionOrder $prevOrder $avgProduced $avgSold $avgOldStockSold $currentLeftoverStock $items
+  $productionOrder = AutoProductionOrder $avgOrdered $avgProduced $avgSold $avgOldStockSold $currentLeftoverStock $items
 
   $check = StockCheck $stock $productionOrder
   $prod = OutputProduction $check
@@ -405,6 +416,7 @@ for ($day = ($lastDay + 1); $day -le $TargetDay; $day++) {
     $producedHist[$it] = @(@($producedHist[$it]) + @($producedLast[$it])) | Select-Object -Last 3
     $soldHist[$it] = @(@($soldHist[$it]) + @($soldLast[$it])) | Select-Object -Last 3
     $oldStockSoldHist[$it] = @(@($oldStockSoldHist[$it]) + @($oldStockSoldLast[$it])) | Select-Object -Last 3
+    $orderedHist[$it] = @(@($orderedHist[$it]) + @($prevOrder[$it])) | Select-Object -Last 3
   }
 }
 
@@ -423,6 +435,6 @@ if (Test-Path $LogPath) {
 foreach ($r in $dayReports) { [void]$combinedLog.Add($r) }
 $combinedLog | ConvertTo-Json -Depth 6 | Set-Content -Path $LogPath -Encoding utf8
 
-$state = @{ stock=$stock; cash=$cash; history=$history; walkedAwayHistory=$walkedAwayHistory; lastDay=$TargetDay; prevOrder=$prevOrder; producedLast=$producedLast; soldLast=$soldLast; consecutiveDays=$consecutiveDays; staleStock1=$staleStock1; staleStock2=$staleStock2; shopRating=$shopRating; consecutiveGoodDays=$consecutiveGoodDays; oldStockSoldLast=$oldStockSoldLast; producedHist=$producedHist; soldHist=$soldHist; oldStockSoldHist=$oldStockSoldHist }
+$state = @{ stock=$stock; cash=$cash; history=$history; walkedAwayHistory=$walkedAwayHistory; lastDay=$TargetDay; prevOrder=$prevOrder; producedLast=$producedLast; soldLast=$soldLast; consecutiveDays=$consecutiveDays; staleStock1=$staleStock1; staleStock2=$staleStock2; shopRating=$shopRating; consecutiveGoodDays=$consecutiveGoodDays; oldStockSoldLast=$oldStockSoldLast; producedHist=$producedHist; soldHist=$soldHist; oldStockSoldHist=$oldStockSoldHist; orderedHist=$orderedHist }
 $state | ConvertTo-Json | Set-Content -Path $StatePath -Encoding utf8
 
