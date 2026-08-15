@@ -1,58 +1,4 @@
 {
-  "lastDay": 146,
-  "consecutiveDays": {
-    "melonpan": 0,
-    "anpan": 0,
-    "shokupan": 0
-  },
-  "prevOrder": {
-    "melonpan": 4,
-    "anpan": 2,
-    "shokupan": 6
-  },
-  "oldStockSoldHist": {
-    "melonpan": [
-      0.0,
-      0
-    ],
-    "anpan": [
-      0.0,
-      0
-    ],
-    "shokupan": [
-      0.0,
-      0
-    ]
-  },
-  "oldStockSoldLast": {
-    "melonpan": 0,
-    "anpan": 0,
-    "shokupan": 0
-  },
-  "soldHist": {
-    "melonpan": [
-      2.0,
-      3
-    ],
-    "anpan": [
-      1.0,
-      0
-    ],
-    "shokupan": [
-      4.0,
-      4
-    ]
-  },
-  "stock": {
-    "flour": 4.16,
-    "sugar": 0.695,
-    "egg": 33.0,
-    "cocoa": 0.0,
-    "butter": 0.45,
-    "redbean": 1.35,
-    "milk": 3.72,
-    "yeast": 0.618
-  },
   "history": [
     14,
     10,
@@ -199,8 +145,20 @@
     9,
     18,
     9,
-    5
+    5,
+    7
   ],
+  "oldStockSoldLast": {
+    "melonpan": 1,
+    "anpan": 2,
+    "shokupan": 2
+  },
+  "shopRating": 35.480040490041205,
+  "prevOrder": {
+    "melonpan": 2,
+    "anpan": 1,
+    "shokupan": 4
+  },
   "walkedAwayHistory": [
     0,
     0,
@@ -347,43 +305,96 @@
     0,
     7,
     3,
-    1
+    1,
+    0
   ],
-  "shopRating": 35.21583209478022,
   "staleStock1": {
     "melonpan": 1.0,
-    "anpan": 2.0,
+    "anpan": 1.0,
     "shokupan": 2.0
   },
-  "consecutiveGoodDays": 1,
   "soldLast": {
-    "melonpan": 3,
-    "anpan": 0,
+    "melonpan": 2,
+    "anpan": 2,
     "shokupan": 4
+  },
+  "stock": {
+    "milk": 2.96,
+    "butter": 0.285,
+    "yeast": 0.595,
+    "egg": 31.0,
+    "flour": 3.55,
+    "sugar": 0.515,
+    "cocoa": 0.0,
+    "redbean": 1.3
+  },
+  "soldHist": {
+    "melonpan": [
+      2.0,
+      3.0,
+      2
+    ],
+    "anpan": [
+      1.0,
+      0.0,
+      2
+    ],
+    "shokupan": [
+      4.0,
+      4.0,
+      4
+    ]
   },
   "staleStock2": {
     "melonpan": 0.0,
     "anpan": 0.0,
     "shokupan": 0.0
   },
-  "cash": 35659.706666666796,
-  "producedLast": {
-    "melonpan": 4.0,
-    "anpan": 2.0,
-    "shokupan": 6.0
+  "oldStockSoldHist": {
+    "melonpan": [
+      0.0,
+      0.0,
+      1
+    ],
+    "anpan": [
+      0.0,
+      0.0,
+      2
+    ],
+    "shokupan": [
+      0.0,
+      0.0,
+      2
+    ]
   },
+  "producedLast": {
+    "melonpan": 2.0,
+    "anpan": 1.0,
+    "shokupan": 4.0
+  },
+  "consecutiveGoodDays": 2,
+  "cash": 35818.6066666668,
+  "lastDay": 147,
   "producedHist": {
     "melonpan": [
       2.0,
-      4.0
+      4.0,
+      2.0
     ],
     "anpan": [
       1.0,
-      2.0
+      2.0,
+      1.0
     ],
     "shokupan": [
       4.0,
-      6.0
+      6.0,
+      4.0
     ]
+  },
+  "consecutiveDays": {
+    "melonpan": 1,
+    "anpan": 1,
+    "shokupan": 1
   }
 }
