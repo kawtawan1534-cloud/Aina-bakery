@@ -25,7 +25,14 @@ function AutoProductionOrder($prevOrder, $producedLastDay, $soldLastDay, $oldSto
     $produced = if ($producedLastDay.ContainsKey($item)) { $producedLastDay[$item] } else { 0 }
     $sold = if ($soldLastDay.ContainsKey($item)) { $soldLastDay[$item] } else { 0 }
     $oldSold = if ($oldStockSoldLastDay.ContainsKey($item)) { $oldStockSoldLastDay[$item] } else { 0 }
-    $freshSold = [Math]::Max(0, $sold - $oldSold) # ยอดขายที่มาจากของใหม่ล้วนๆ ไม่นับของเก่าช่วยขาย
+    # (แก้บัคด่วน 2026-08-14 — ผู้เล่นถามว่าทำไมขายหมดแล้วยอดสั่งไม่ขึ้น) เดิมใช้
+    # [Math]::Max(0, ...) ด้วยเลข Int32 ทำให้ PowerShell เลือก overload ผิดแล้ว
+    # ปัดทศนิยมของ freshSold ทิ้งทุกครั้ง (บั๊กคนละจุดแต่หน้าตาเดียวกับที่เจอใน
+    # shopRating clamp ตอน Patch 6.6.4) พอ Patch 6.7.0/6.7.1 เริ่มส่งค่าเฉลี่ย
+    # เป็นทศนิยมเข้ามา freshSold ที่ถูกปัดทิ้งทำให้เงื่อนไข "โต" พลาดบ่อยขึ้นมาก
+    # (เช่น freshSold จริง 1.33 ถูกปัดเหลือ 1 ทำให้ freshSold>=produced ที่ควร
+    # เป็นจริงกลายเป็นเท็จ) เปลี่ยนเป็น 0.0 ให้ชัดว่าต้องเป็น double
+    $freshSold = [Math]::Max(0.0, $sold - $oldSold) # ยอดขายที่มาจากของใหม่ล้วนๆ ไม่นับของเก่าช่วยขาย
     $leftover = if ($currentLeftoverStock.ContainsKey($item)) { $currentLeftoverStock[$item] } else { 0 }
     $qty = $ordered
 
