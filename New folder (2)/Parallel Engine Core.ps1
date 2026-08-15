@@ -1,4 +1,4 @@
-﻿# ===== Parallel Engine Core — Version: 6.8.0 =====
+﻿# ===== Parallel Engine Core — Version: 6.9.0 =====
 # ไฟล์นี้คือ orchestrator ตัวจริง (รันได้จริง) — เชื่อมไฟล์ layer ใน Layers\
 # เข้าด้วยกันตามลำดับ pipeline แล้วสั่งรัน ไม่ใช่ตัวคำนวณเอง (ตัวคำนวณอยู่ใน
 # แต่ละไฟล์ layer) Engine Noname.txt เป็น snapshot pseudocode เก่าไว้อ่าน
@@ -223,7 +223,15 @@ for ($day = ($lastDay + 1); $day -le $TargetDay; $day++) {
     $avgSold[$it] = if ($soldHist[$it].Count -gt 0) { ($soldHist[$it] | Measure-Object -Average).Average } else { $soldLast[$it] }
     $avgOldStockSold[$it] = if ($oldStockSoldHist[$it].Count -gt 0) { ($oldStockSoldHist[$it] | Measure-Object -Average).Average } else { $oldStockSoldLast[$it] }
   }
-  $productionOrder = AutoProductionOrder $avgOrdered $avgProduced $avgSold $avgOldStockSold $currentLeftoverStock $items
+  # (แก้ "สูตรไม่มีสามัญสำนึกเรื่องขนาดตลาด" 2026-08-14 — ผู้เล่นสั่ง ยังไม่รัน)
+  # $customerPoolN/$customerVisitP ตอนนี้คือค่าที่คำนวณจบไปแล้วตั้งแต่ท้ายวัน
+  # ก่อนหน้า (มาจากชื่อเสียงที่จบไปแล้ว) ไม่ใช่ค่าที่จะเกิดในอนาคตของวันนี้ —
+  # ใช้เป็นพื้นขั้นต่ำของยอดสั่งได้อย่างสมเหตุสมผล หารเฉลี่ยเท่าๆ กันต่อเมนู
+  # (ประมาณคร่าวๆ ไม่ได้แยกตามสัดส่วนราคา/ความนิยมจริง เพื่อความง่ายก่อน)
+  $expectedCustomersToday = $customerPoolN * $customerVisitP
+  $marketFloorPerItem = @{}
+  foreach ($it in $items) { $marketFloorPerItem[$it] = [Math]::Max(1, [Math]::Floor($expectedCustomersToday / $items.Count)) }
+  $productionOrder = AutoProductionOrder $avgOrdered $avgProduced $avgSold $avgOldStockSold $currentLeftoverStock $marketFloorPerItem $items
 
   $check = StockCheck $stock $productionOrder
   $prod = OutputProduction $check
@@ -385,6 +393,7 @@ for ($day = ($lastDay + 1); $day -le $TargetDay; $day++) {
     bundlePromoActive = $bundlePromoActive
     promoAvailableToday = $promoAvailableToday
     promoPBonus = $promoPBonus
+    marketFloorPerItem = $marketFloorPerItem
     bundleSoldCount = $sales.bundleSoldCount
     discardedToday = $discardedToday
     discardWasteBaht = $discardWasteBaht
